@@ -3,7 +3,7 @@ description: input/batch.csv의 모든 줄에 대해 misskorea-script 스킬을 
 argument-hint: "[--date YYYYMMDD] [--csv 경로] [--only id1,id2] [--overwrite]"
 ---
 
-# /misskorea:misskorea-batch
+# /misskorea:batch
 
 현재 작업 폴더의 `input/batch.csv`를 읽어, 줄마다 `misskorea-script` 스킬(정식 이름 `misskorea:misskorea-script`)을 실행하고 결과를 `output/YYYYMMDD/<id>/`에 저장한다. 마지막에 `output/YYYYMMDD/summary.md`를 만든다.
 
@@ -87,7 +87,7 @@ argument-hint: "[--date YYYYMMDD] [--csv 경로] [--only id1,id2] [--overwrite]"
 1. 각 `<id>/script.md`를 읽고 `script.json`에서 `selected_version`(1 또는 2)과 문구를 고친다.
 2. 검수가 끝난 id는 `script.json`의 `approved`를 `true`로 바꾼다.
 3. `input/videos/<id>.mp4`가 없는 id는 영상 파일을 넣는다.
-4. `/misskorea:misskorea-render`를 실행한다.
+4. `/misskorea:render`를 실행한다.
 ```
 
 - **건수 기준**: 맨 윗줄의 생성/건너뜀/실패는 **이번 실행** 기준이다. "검수 주의"는 표에 있는 모든 id 중 `needs_review`가 `true`인 건수다.
@@ -108,7 +108,7 @@ argument-hint: "[--date YYYYMMDD] [--csv 경로] [--only id1,id2] [--overwrite]"
 - 생성/건너뜀/실패 건수와 `output/<날짜>/summary.md` 경로
 - 검수 주의가 필요한 id와 한 줄 사유
 - 영상 파일이 없는 id
-- 다음 단계(검수 후 `approved` 변경, `/misskorea:misskorea-render`)
+- 다음 단계(검수 후 `approved` 변경, `/misskorea:render`)
 
 ## 하지 않을 것
 

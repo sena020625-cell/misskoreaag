@@ -2,7 +2,7 @@
 
 ## 폴더
 
-`/misskorea:misskorea-batch`가 지정하는 폴더: `output/YYYYMMDD/<id>/`
+`/misskorea:batch`가 지정하는 폴더: `output/YYYYMMDD/<id>/`
 
 ```
 script.json   # 기계용. 이후 단계(tts, subtitle, render)가 읽는다
@@ -137,7 +137,7 @@ script.md     # 사람 검수용
 
 예: `#에이프릴스킨 #APRILSKIN #HeroAlldayPlumpingLipStain #lipstain #kbeauty #립틴트 #립타투`
 
-## summary.md 행 (참고: /misskorea:misskorea-batch 가 만든다)
+## summary.md 행 (참고: /misskorea:batch 가 만든다)
 
 | id | 제품 | 1순위 제목 | 검수 필요 |
 |---|---|---|---|

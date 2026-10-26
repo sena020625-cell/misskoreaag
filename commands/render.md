@@ -3,7 +3,7 @@ description: 검수가 끝난(approved=true) 대본에 대해 TTS 더빙 → 자
 argument-hint: "[id ...] [--date YYYYMMDD] [--preview 초] [--force-tts]"
 ---
 
-# /misskorea:misskorea-render
+# /misskorea:render
 
 검수가 끝난 id들에 대해 `tts.py` → `subtitle.py` → `render.py`를 차례로 실행해 `output/YYYYMMDD/<id>/final.mp4`를 만든다. 작업 폴더(현재 폴더)에서 실행한다.
 
@@ -42,7 +42,7 @@ argument-hint: "[id ...] [--date YYYYMMDD] [--preview 초] [--force-tts]"
 
 ### 3. 실행 (남은 id 전부를 한 번씩 넘긴다)
 
-`--preview`가 있으면 3번의 TTS·자막 단계를 건너뛰고 `render.py <id들> --date <날짜> --preview <초>`만 실행한다. `voice.mp3`나 `subtitle.srt`가 없다는 오류가 나면 "먼저 `/misskorea:misskorea-render <id>`를 한 번 실행해주세요."라고 알린다.
+`--preview`가 있으면 3번의 TTS·자막 단계를 건너뛰고 `render.py <id들> --date <날짜> --preview <초>`만 실행한다. `voice.mp3`나 `subtitle.srt`가 없다는 오류가 나면 "먼저 `/misskorea:render <id>`를 한 번 실행해주세요."라고 알린다.
 
 그렇지 않으면 아래를 순서대로 실행한다. 단계에서 실패한 id는 다음 단계에서 뺀다.
 

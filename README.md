@@ -10,10 +10,10 @@ batch.csv 작성 ─ 원본 영상 넣기 ─ 대본 일괄 생성 ─ 검수(�
 
 | 명령어 | 하는 일 |
 |---|---|
-| `/misskorea:misskorea-batch` | `input/batch.csv`의 모든 줄에 대해 대본 패키지를 만들고 요약표를 만든다 |
-| `/misskorea:misskorea-render` | 검수가 끝난 영상들의 TTS 더빙 → 자막 → 렌더링을 한 번에 실행한다 |
+| `/misskorea:batch` | `input/batch.csv`의 모든 줄에 대해 대본 패키지를 만들고 요약표를 만든다 |
+| `/misskorea:render` | 검수가 끝난 영상들의 TTS 더빙 → 자막 → 렌더링을 한 번에 실행한다 |
 
-> 명령어 이름은 플러그인 이름이 앞에 붙은 `/misskorea:...` 형태입니다. `/misskorea-batch`처럼 짧게 치면 "Unknown command"가 나옵니다. 입력창에 `/misskorea`까지만 치고 목록에서 고르세요.
+> 명령어 이름은 플러그인 이름이 앞에 붙은 `/misskorea:...` 형태입니다. `/batch`나 `/misskorea-batch`처럼 짧게 치면 "Unknown command"가 나올 수 있습니다. 입력창에 `/misskorea`까지만 치고 목록에서 고르세요.
 
 ---
 
@@ -105,7 +105,7 @@ id,제품명,공식몰URL,원본링크,원본메모,훅,강조포인트,크리�
 작업 폴더에서 Claude Code를 열고 입력합니다.
 
 ```
-/misskorea:misskorea-batch
+/misskorea:batch
 ```
 
 줄마다 공식 상세페이지를 읽고(이미지뿐이면 해외 판매처로 보완) 대본을 만들어 `output/오늘날짜/<id>/`에 저장합니다. 확인된 사실만 쓰고, 확인 못 한 것은 검수 메모에 남깁니다.
@@ -134,14 +134,14 @@ id,제품명,공식몰URL,원본링크,원본메모,훅,강조포인트,크리�
 ### ⑤ 렌더링
 
 ```
-/misskorea:misskorea-render
+/misskorea:render
 ```
 
 `approved`가 `true`인 영상 전부에 대해 TTS 더빙 → 자막 → 렌더링을 실행합니다. 결과는 `output/날짜/<id>/final.mp4`입니다.
 
-- 특정 영상만: `/misskorea:misskorea-render 001 003`
-- 어제 만든 폴더: `/misskorea:misskorea-render --date 20261025`
-- 화면 배치만 빨리 확인: `/misskorea:misskorea-render 001 --preview 3` (3초 지점 한 장을 `preview.png`로 저장, TTS 비용 없음)
+- 특정 영상만: `/misskorea:render 001 003`
+- 어제 만든 폴더: `/misskorea:render --date 20261025`
+- 화면 배치만 빨리 확인: `/misskorea:render 001 --preview 3` (3초 지점 한 장을 `preview.png`로 저장, TTS 비용 없음)
 - 음성을 다시 만들기: `--force-tts` (문구가 같으면 기본으로 재사용해 크레딧을 아낍니다)
 
 ### ⑥ 최종 확인 후 업로드
@@ -179,7 +179,7 @@ title:
     box_color: "#00B050"  # 초록 박스 색
 ```
 
-바꾼 뒤에는 `/misskorea:misskorea-render <id> --preview 3`으로 먼저 확인하세요. 항목별 설명은 `config/template.yaml`의 주석에 있습니다. 가로 영상은 `video.fit: contain_blur`로 바꾸면 원본 전체를 보이고 남는 곳을 흐린 배경으로 채웁니다.
+바꾼 뒤에는 `/misskorea:render <id> --preview 3`으로 먼저 확인하세요. 항목별 설명은 `config/template.yaml`의 주석에 있습니다. 가로 영상은 `video.fit: contain_blur`로 바꾸면 원본 전체를 보이고 남는 곳을 흐린 배경으로 채웁니다.
 
 폰트는 상업적 사용이 가능한 **Black Han Sans**(타이틀)와 **Pretendard Bold**(자막)를 `assets/fonts`에 넣어 두었습니다(SIL OFL 1.1, 라이선스 파일 동봉).
 
@@ -189,7 +189,7 @@ title:
 
 | 증상 | 원인과 해결 |
 |---|---|
-| `Unknown command: /misskorea-batch` | 정식 이름은 `/misskorea:misskorea-batch`입니다. 그래도 안 나오면 플러그인이 설치·활성화됐는지 `/plugin`으로 확인하고 Claude Code를 다시 시작하세요 |
+| `Unknown command: /batch` (또는 `/misskorea-batch`) | 정식 이름은 `/misskorea:batch`입니다. 그래도 안 나오면 플러그인이 설치·활성화됐는지 `/plugin`으로 확인하고 Claude Code를 다시 시작하세요 |
 | `python`을 찾을 수 없다 | Python 설치 후 **터미널과 Claude Code를 완전히 껐다 켜세요**(PATH 갱신). Windows에서는 `py -3`로도 시도합니다 |
 | `ModuleNotFoundError` (requests, yaml, PIL, dotenv) | `pip install requests python-dotenv PyYAML Pillow` |
 | `ffmpeg를 찾을 수 없습니다` | ffmpeg 설치 후 터미널을 새로 엽니다. `ffmpeg -version`이 실행돼야 합니다 |
@@ -234,7 +234,7 @@ title:
 misskorea/
 ├─ .claude-plugin/{plugin.json, marketplace.json}   저장소 자체가 마켓플레이스
 ├─ skills/misskorea-script/                         대본 생성 스킬 + references(스타일·심의·스키마)
-├─ commands/{misskorea-batch.md, misskorea-render.md}
+├─ commands/{batch.md, render.md}
 ├─ scripts/{tts.py, subtitle.py, render.py, common.py, tts_providers/}
 ├─ config/template.yaml                             화면 모양 기본값
 ├─ assets/fonts/                                    폰트와 라이선스

@@ -1,6 +1,6 @@
 ---
 name: misskorea-script
-description: 유튜브 쇼츠 채널 '미쓰코리아'의 K-뷰티 제품 소개 쇼츠 대본 패키지(TTS 캡션 2버전, 대체 훅, 제목 후보, 상단 타이틀, 설명란, 검수 메모)를 만든다. 제품명과 공식몰 상세페이지 URL이 주어지고 쇼츠 스크립트·캡션·제목·설명란 작성을 요청받을 때, 또는 /misskorea:misskorea-batch 가 줄마다 호출할 때 사용한다.
+description: 유튜브 쇼츠 채널 '미쓰코리아'의 K-뷰티 제품 소개 쇼츠 대본 패키지(TTS 캡션 2버전, 대체 훅, 제목 후보, 상단 타이틀, 설명란, 검수 메모)를 만든다. 제품명과 공식몰 상세페이지 URL이 주어지고 쇼츠 스크립트·캡션·제목·설명란 작성을 요청받을 때, 또는 /misskorea:batch 가 줄마다 호출할 때 사용한다.
 ---
 
 # misskorea-script
@@ -72,7 +72,7 @@ description: 유튜브 쇼츠 채널 '미쓰코리아'의 K-뷰티 제품 소개
 
 ## 출력 방식
 
-- **출력 폴더가 지정된 경우**(예: `/misskorea:misskorea-batch` 호출): 폴더에 `script.json`(기계용)과 `script.md`(사람 검수용)를 저장한다. 스키마와 양식은 `references/output-schema.md`를 따른다. 저장 후 한 줄로 결과(id, 1순위 제목, 검수 필요 여부)만 보고한다.
+- **출력 폴더가 지정된 경우**(예: `/misskorea:batch` 호출): 폴더에 `script.json`(기계용)과 `script.md`(사람 검수용)를 저장한다. 스키마와 양식은 `references/output-schema.md`를 따른다. 저장 후 한 줄로 결과(id, 1순위 제목, 검수 필요 여부)만 보고한다.
 - **지정되지 않은 경우**(대화에서 직접 요청): `script.md` 양식 그대로 대화에 출력하고, 파일 저장 여부를 묻는다.
 
 `script.json`의 `approved`는 항상 `false`로 시작한다. 사람이 검수하고 `true`로 바꿔야 렌더링 대상이 된다.
