@@ -246,3 +246,4 @@ misskorea/
 - **자동 업로드(추후)**: 영상마다 `final.mp4`와 `script.json`(제목, 설명란)이 한 폴더에 있으므로, YouTube Data API 예약 업로드를 붙일 때 이 폴더를 그대로 읽으면 됩니다.
 - **버전 올리기**: `.claude-plugin/plugin.json`과 `marketplace.json`의 `version`을 같이 올린 뒤 푸시합니다.
 - **로컬 시험**: `claude --plugin-dir <이 폴더>`로 설치 없이 불러올 수 있습니다.
+- **다른 컴퓨터에서 테스트**: 설치, 폴더 복사, 격리 설치, Claude 없이 스크립트만 돌리는 방법과 체크리스트는 [docs/TESTING.md](docs/TESTING.md)에 있습니다.
