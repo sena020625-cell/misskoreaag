@@ -30,10 +30,10 @@ batch.csv 작성 ─ 원본 영상 넣기 ─ 대본 일괄 생성 ─ 검수(�
 
 ## 2. 설치
 
-Claude Code에서 아래 두 줄을 차례로 입력합니다. `<GitHub조직>/<저장소명>`은 팀 저장소 주소로 바꿔주세요.
+Claude Code에서 아래 두 줄을 차례로 입력합니다.
 
 ```
-/plugin marketplace add <GitHub조직>/<저장소명>
+/plugin marketplace add sena020625-cell/misskoreaag
 /plugin install misskorea@misskorea-marketplace
 ```
 
