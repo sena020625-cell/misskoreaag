@@ -1,0 +1,62 @@
+# 미쓰코리아 영상 템플릿 기본값.
+# 작업 폴더의 config/template.yaml 에 바꾸고 싶은 항목만 적으면 이 파일의 값을 덮어씁니다.
+# 길이는 모두 픽셀(1080x1920 기준), 색은 #RRGGBB 입니다.
+# 레이아웃을 바꿨다면 `python render.py <id> --preview 3` 으로 한 장짜리 미리보기를 먼저 확인하세요.
+
+video:
+  width: 1080
+  height: 1920
+  fps: 30
+  # cover: 화면을 꽉 채우도록 확대·가운데 크롭 / contain_blur: 원본 전체를 보이고 남는 곳은 흐린 배경으로 채움
+  fit: cover
+  # 원본 영상 소리 크기(1.0 = 그대로). TTS가 묻히지 않도록 크게 낮춥니다.
+  source_volume: 0.12
+  tts_volume: 1.0
+  # TTS가 끝난 뒤 영상을 더 이어가는 시간(초)
+  tail_seconds: 0.5
+  crf: 20
+  preset: medium
+  audio_bitrate: 192k
+
+# 상단 타이틀: 검은 띠 + 흰 글씨 1줄 + 초록 박스 1줄
+title:
+  font: assets/fonts/BlackHanSans-Regular.ttf
+  band_height: 420
+  band_color: "#000000"
+  # 글자가 이 폭을 넘으면 글씨 크기를 자동으로 줄입니다
+  max_width: 960
+  line1:
+    size: 72
+    color: "#FFFFFF"
+    center_y: 170
+  line2:
+    size: 84
+    color: "#FFFFFF"
+    box_color: "#00C853"
+    pad_x: 32
+    pad_y: 14
+    radius: 14
+    center_y: 300
+
+# 하단 자막: 노란 글씨 + 검정 외곽선
+subtitle:
+  # 한 줄 최대 글자 수. 글씨 크기 76px(Pretendard Bold) 기준 16자까지 폭 안에 들어옵니다.
+  max_chars_per_line: 16
+  # 한 화면(자막 한 개)에 넣을 최대 줄 수
+  max_lines: 2
+  # 자막 끝에서 떼어낼 문장부호 (쉼표, 마침표만. ?! … 는 유지)
+  strip_end_punct: ",."
+  # 자막 최소 표시 시간(초). 짧으면 다음 자막 시작 전까지 늘립니다.
+  min_duration: 0.8
+  # 말이 끝난 뒤 자막을 더 보여주는 시간(초). 다음 자막 시작 전까지만 늘립니다.
+  hold: 0.2
+  font: assets/fonts/Pretendard-Bold.otf
+  size: 76
+  color: "#FFE600"
+  outline_color: "#000000"
+  outline_width: 9
+  line_spacing: 14
+  # 자막 글자 블록의 아래쪽 끝에서 화면 맨 아래까지의 거리(유튜브 쇼츠 하단 UI를 피함)
+  bottom_margin: 420
+  # 글자가 이 폭을 넘으면 그 자막만 글씨 크기를 줄입니다
+  max_width: 1000
