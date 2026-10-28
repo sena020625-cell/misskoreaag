@@ -103,11 +103,31 @@ id,제품명,공식몰URL,원본링크,원본메모,훅,강조포인트,크리�
 | id | O | 영상 번호. **원본 영상 파일 이름과 같아야 합니다**(예: `001` → `input/videos/001.mp4`) |
 | 제품명 | O | 한글 제품명 |
 | 공식몰URL | O | 공식몰 상세페이지 주소(`https://`로 시작) |
-| 원본링크 | | 참고용 링크. 영상을 내려받는 데 쓰지 않습니다 |
+| 원본링크 | | 원본 영상의 주소. 영상을 내려받는 데 쓰지 않고, **출처 자동 표기**에 씁니다(아래 참고) |
 | 원본메모 | | 원본 영상에서 무슨 일이 일어나는지 적어주면 첫 줄 훅이 훨씬 좋아집니다 |
 | 훅 | | 원하는 첫 줄이 있으면 적습니다 |
 | 강조포인트 | | 꼭 넣고 싶은 특징 |
-| 크리에이터 | | 설명란의 `📷I` 줄에 들어갑니다. 비워두면 그 줄이 빠지고 검수 메모에 알림이 뜹니다 |
+| 크리에이터 | | 설명란의 `📷I` 줄에 들어갑니다. 비워두면 `원본링크`의 계정을 자동으로 씁니다. 둘 다 없으면 그 줄이 빠지고 검수 메모에 알림이 뜹니다 |
+
+**출처 자동 표기:** `/misskorea:batch`가 대본을 만든 뒤 `원본링크`에서 크리에이터를 읽어 설명란 맨 아래에 아래처럼 넣습니다. 영상을 내려받지 않고 링크 주소만 읽습니다.
+
+```
+📷I @계정
+🔗 원본: https://www.tiktok.com/@계정/video/숫자
+```
+
+| 링크 종류 | 자동으로 알 수 있나 |
+|---|---|
+| TikTok `tiktok.com/@계정/video/...` | 예 |
+| TikTok 단축 링크 `vm.tiktok.com/...`, `tiktok.com/t/...` | 원래 주소를 따라가서 알아냅니다. 실패하면 "직접 확인 필요" |
+| Instagram `instagram.com/계정/reel/...` | 예 (계정이 없는 `instagram.com/reel/...` 형태는 직접 확인) |
+| X(트위터) `x.com/계정/status/...` | 예 |
+| YouTube 쇼츠·영상 링크, 그 외 사이트 | 아니오. "직접 확인 필요"로 표시됩니다 |
+
+- `크리에이터` 열에 값을 적으면 그 값을 쓰고, 링크의 계정과 다르면 검수 메모에 알립니다.
+- 링크에서 알 수 없으면 `needs_review`가 켜지고 `summary.md`의 `출처` 칸에 "직접 확인 필요"가 뜹니다. 이때는 `script.json`의 `creator`와 설명란을 직접 고치세요.
+- **출처 표기는 사용 허락을 대신하지 않습니다.** 원본 영상은 사용 허락을 받은 것만 쓰고, 허락은 직접 확인하세요.
+- 수동 실행: `python <플러그인 폴더>/scripts/source_credit.py apply 001 --date 20261026 --link "<링크>"`. 링크만 해석해 보려면 `parse "<링크>"`.
 
 ---
 
@@ -257,7 +277,7 @@ misskorea/
 ├─ .claude-plugin/{plugin.json, marketplace.json}   저장소 자체가 마켓플레이스
 ├─ skills/misskorea-script/                         대본 생성 스킬 + references(스타일·심의·스키마)
 ├─ commands/{batch.md, render.md}
-├─ scripts/{tts.py, subtitle.py, render.py, common.py, tts_providers/}
+├─ scripts/{tts.py, subtitle.py, render.py, source_credit.py, typecast_voices.py, common.py, tts_providers/}
 ├─ config/template.yaml                             화면 모양 기본값
 ├─ assets/fonts/                                    폰트와 라이선스
 ├─ templates/{batch.csv, .env.example}
