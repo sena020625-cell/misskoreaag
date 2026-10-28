@@ -25,6 +25,7 @@ from subtitle import _span_times, wrap_spans  # 같은 scripts 폴더의 자막 
 US = 1_000_000
 CHUNK_CHARS = 10   # 한 화면에 나오는 자막 글자 수(공백 포함) 상한
 TITLE_MAX = 13     # 상단 타이틀 한 줄의 글자 수 상한(권장은 10자)
+LINE_END_HOLD = 0.15  # 줄의 마지막 자막을 소리가 끝난 뒤에도 잠깐 더 보여준다(초)
 DEFAULT_ROOT = Path.home() / "AppData/Local/CapCut/User Data/Projects/com.lveditor.draft"
 
 
@@ -208,8 +209,11 @@ def build_content(tpl: dict, script: dict, timing: dict, voice: Path, videos: li
     cues = []
     for l in lines:
         text = l["text"]
-        for a, e in wrap_spans(text, CHUNK_CHARS):
+        spans = wrap_spans(text, CHUNK_CHARS)
+        for n, (a, e) in enumerate(spans):
             s0, e0 = _span_times(l, a, e)
+            if n == len(spans) - 1:
+                e0 += LINE_END_HOLD  # 글자 타이밍의 끝은 실제 소리보다 0.1초 안팎 이르다(실측)
             shown = text[a:e].rstrip(",.") or text[a:e]
             cues.append([s0, max(e0, s0 + 0.3), shown])
     subs = []
