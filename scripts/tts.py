@@ -77,6 +77,8 @@ def run_one(item_id: str, args, workdir: Path, env: dict) -> bool:
     }
     (out / "timing.json").write_text(json.dumps(timing, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[{item_id}] 완료: voice.mp3 {result.duration:.1f}초, timing.json {len(result.lines)}줄")
+    for warning in result.meta.get("warnings", []):
+        print(f"[{item_id}] 주의: {warning}")
     if not 16 <= result.duration <= 30:
         print(f"[{item_id}] 주의: 길이가 16~30초 범위를 벗어났습니다. 문구를 줄이거나 늘려 보세요.")
     return True

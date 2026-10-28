@@ -41,8 +41,15 @@ def _openai_backend(text: str, env: Mapping[str, str]) -> bytes:
     return resp.content
 
 
+def _typecast_backend(text: str, env: Mapping[str, str]) -> bytes:
+    """타입캐스트 일반 TTS 로 한 줄을 합성한다(글자 타이밍 정렬이 맞지 않을 때의 대안)."""
+    from .typecast import TypecastSettings, synth_plain
+    return synth_plain(TypecastSettings.from_env(env), text)
+
+
 BACKENDS: dict[str, Callable[[str, Mapping[str, str]], bytes]] = {
     "openai": _openai_backend,
+    "typecast": _typecast_backend,
 }
 
 
@@ -67,6 +74,9 @@ class PerLineProvider(TTSProvider):
         # 키 누락을 합성 전에 알 수 있도록 설정만 먼저 점검한다
         if backend == "openai":
             require_env(env, "OPENAI_API_KEY", "OpenAI API 키를 넣어주세요.")
+        if backend == "typecast":
+            from .typecast import TypecastSettings
+            TypecastSettings.from_env(env)
         return cls(backend, env, gap)
 
     def describe(self) -> dict:
@@ -74,6 +84,9 @@ class PerLineProvider(TTSProvider):
         if self.backend == "openai":
             info["model"] = (self.env.get("OPENAI_TTS_MODEL") or "gpt-4o-mini-tts").strip()
             info["voice"] = (self.env.get("OPENAI_TTS_VOICE") or "alloy").strip()
+        if self.backend == "typecast":
+            from .typecast import TypecastSettings
+            info.update({k: v for k, v in TypecastSettings.from_env(self.env).describe().items() if k != "provider"})
         return info
 
     def estimate_cost(self, lines: list[str]) -> str:

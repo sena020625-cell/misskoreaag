@@ -88,7 +88,7 @@ cd C:\misskoreaag
 python -m unittest discover -s tests
 ```
 
-**통과 기준:** `Ran 29 tests ... OK`. 실패하면 Python 버전이나 패키지(`pip install ...`)부터 확인하세요.
+**통과 기준:** `Ran 44 tests ... OK`. 실패하면 Python 버전이나 패키지(`pip install ...`)부터 확인하세요.
 
 ---
 
@@ -227,6 +227,27 @@ ELEVENLABS_MODEL_ID=eleven_multilingual_v2
 
 **통과 기준:** `final.mp4`에서 한국어 음성이 나오고 자막이 말과 맞습니다. **이 단계는 아직 개발 PC에서도 실제 키로 검증하지 못했으므로, 가장 중요한 확인 대상입니다.** 오류가 나면 안내 문구(401 키 오류, 404 보이스 ID 오류, 429 크레딧 부족)를 그대로 알려주세요.
 
+### 8-5. 타입캐스트 음성 (타입캐스트 API 크레딧이 듭니다)
+
+`.env`를 아래처럼 바꿉니다(키는 [개발자 콘솔](https://studio.typecast.ai/developers/api)에서 발급).
+
+```text
+TTS_PROVIDER=typecast
+TYPECAST_API_KEY=본인_키
+TYPECAST_VOICE_ID=tc_로_시작하는_보이스_ID
+TYPECAST_MODEL=ssfm-v30
+TYPECAST_LANGUAGE=kor
+```
+
+```text
+/misskorea:render 001 --force-tts
+```
+
+**통과 기준:** 위 8-4와 같습니다. **실제 타입캐스트 API로는 아직 호출해 보지 못했습니다**(공식 문서의 응답 구조를 본뜬 가짜 응답으로만 검증). 확인할 것:
+- `output\날짜\001\timing.json`의 `lines[].chars` 글자 수가 문구 글자 수와 같은지, 자막 타이밍이 말과 맞는지.
+- "글자 수가 문구의 글자 수와 다르다"는 오류가 나면 `.env`를 `TTS_PROVIDER=per_line`, `PER_LINE_BACKEND=typecast`로 바꿔 다시 시도하고, 그 오류 문구와 문구 내용(숫자, 기호 포함 여부)을 알려주세요.
+- "응답 글자 N개가 문구와 달라 순서대로 대응시켰습니다" 주의 문구가 나오면 발음과 자막 타이밍을 귀로 확인해주세요.
+
 ---
 
 ## 9. 체크리스트
@@ -234,7 +255,7 @@ ELEVENLABS_MODEL_ID=eleven_multilingual_v2
 | # | 확인 항목 | 방법 | 결과 |
 |---|---|---|---|
 | 1 | `python --version`, `ffmpeg -version`이 실행된다 | 1장 | ☐ |
-| 2 | 단위 테스트 29건이 통과한다 | F | ☐ |
+| 2 | 단위 테스트 44건이 통과한다 | F | ☐ |
 | 3 | 스모크 테스트 3단계가 성공하고 `final.mp4`가 재생된다 | E | ☐ |
 | 4 | 플러그인이 설치·활성화된다 | A (또는 B, C, D) | ☐ |
 | 5 | `/misskorea`에 `batch`, `render`가 보인다 | A~D | ☐ |
@@ -244,6 +265,7 @@ ELEVENLABS_MODEL_ID=eleven_multilingual_v2
 | 9 | 실제 원본 영상 위에서 타이틀·자막 위치와 크기가 괜찮다 | 8-3 | ☐ |
 | 10 | 실제 ElevenLabs 음성이 나오고 발음·자막 타이밍이 맞다 | 8-4 | ☐ |
 | 11 | 원본 소리가 TTS를 가리지 않는다(볼륨 밸런스) | 8-4 | ☐ |
+| 12 | 타입캐스트 음성이 나오고 자막 타이밍이 맞는다(타입캐스트를 쓰는 경우) | 8-5 | ☐ |
 
 ## 10. 결과 보고 양식
 

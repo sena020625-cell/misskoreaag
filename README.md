@@ -25,7 +25,7 @@ batch.csv 작성 ─ 원본 영상 넣기 ─ 대본 일괄 생성 ─ 검수(�
 | Python 3.10 이상 | Windows: `winget install Python.Python.3.12`. 설치 후 터미널을 새로 열어야 `python`이 잡힙니다 |
 | ffmpeg | Windows: `winget install Gyan.FFmpeg`. `ffmpeg -version`이 실행돼야 합니다 |
 | Python 패키지 | `pip install requests python-dotenv PyYAML Pillow` |
-| ElevenLabs 계정 | TTS 더빙용. API 키와 **채널 고정 보이스 ID**가 필요합니다. 상업적 사용 가능 여부는 플랜 약관을 확인하세요(무료 플랜은 제한이 있습니다) |
+| TTS 계정 (둘 중 하나) | 더빙용. **ElevenLabs**(기본) 또는 **타입캐스트**의 API 키와 **채널 고정 보이스 ID**가 필요합니다. 상업적 사용 가능 여부는 각 플랜 약관을 확인하세요. 타입캐스트는 개인 구독과 별도의 API 요금제가 필요할 수 있습니다 |
 | 원본 영상 | **사용 허락을 받은 영상**을 직접 `mp4`로 준비합니다 |
 
 ## 2. 설치
@@ -69,6 +69,18 @@ ELEVENLABS_VOICE_ID=팀이_정한_보이스_ID
 ELEVENLABS_MODEL_ID=eleven_multilingual_v2
 ```
 
+타입캐스트를 쓰려면 `TTS_PROVIDER`를 바꾸고 타입캐스트 값을 채웁니다. 키는 [타입캐스트 개발자 콘솔](https://studio.typecast.ai/developers/api)에서 발급합니다.
+
+```
+TTS_PROVIDER=typecast
+TYPECAST_API_KEY=여기에_본인_API_키
+TYPECAST_VOICE_ID=tc_로_시작하는_보이스_ID
+TYPECAST_MODEL=ssfm-v30
+TYPECAST_LANGUAGE=kor
+```
+
+- 속도, 음높이, 음량, 감정(`TYPECAST_EMOTION=smart` 등)은 선택입니다. 설명은 `templates/.env.example`에 있습니다.
+- 타입캐스트의 글자 타이밍이 문구와 맞지 않는다는 오류가 나면 `TTS_PROVIDER=per_line`, `PER_LINE_BACKEND=typecast`로 바꿔 보세요. 줄마다 합성해 이어 붙이는 대안입니다.
 - **API 키는 본인 것만 쓰고 절대 공유·커밋하지 마세요.** `.env`는 작업 폴더 안에만 둡니다.
 - 모든 설정 항목은 플러그인의 `templates/.env.example`에 설명과 함께 있습니다.
 
@@ -202,6 +214,10 @@ title:
 | ElevenLabs 오류 401 | API 키가 틀렸거나 권한이 없습니다 |
 | ElevenLabs 오류 404 | `ELEVENLABS_VOICE_ID`가 틀렸습니다 |
 | ElevenLabs 오류 429 | 크레딧이 부족하거나 요청이 너무 많습니다. 크레딧을 확인하고 잠시 뒤 다시 실행하세요 |
+| 타입캐스트 오류 401 / 404 | API 키(`TYPECAST_API_KEY`) 또는 보이스 ID(`TYPECAST_VOICE_ID`, `tc_`로 시작)가 틀렸습니다 |
+| 타입캐스트 오류 402 / 429 | 크레딧 부족 / 요청 한도 초과입니다. 요금제를 확인하고 잠시 뒤 다시 실행하세요 |
+| 타입캐스트 오류 422 | 합성할 수 없는 문구입니다. 이모지나 특수 기호를 빼세요 |
+| "타입캐스트가 돌려준 글자 수가 문구의 글자 수와 다르다" | 숫자·기호를 다르게 읽은 경우입니다. `.env`를 `TTS_PROVIDER=per_line`, `PER_LINE_BACKEND=typecast`로 바꾸세요 |
 | "길이가 16~30초 범위를 벗어났습니다" | 캡션이 너무 길거나 짧습니다. `script.json`에서 문구를 줄이거나 늘리고 다시 렌더링하세요 |
 | 발음이 이상하다 | 영문·긴 제품명이 흔한 원인입니다. 캡션 문구를 TTS가 읽기 쉽게 고치세요(착붙 같은 줄임말은 풀어 쓰기). 문구를 고치면 음성은 자동으로 다시 만들어집니다 |
 | "원본 영상이 없습니다" | `input/videos/<id>.mp4`가 있는지, 이름이 id와 같은지 확인하세요 |
@@ -216,7 +232,7 @@ title:
 | 단계 | 비용 |
 |---|---|
 | 대본 생성(batch) | Claude 사용량. 영상 1개당 웹 페이지 몇 개를 읽고 작성합니다 |
-| TTS(render 안) | **ElevenLabs 크레딧**(글자 수 기준). 영상 1개당 대략 150~300자입니다. 같은 문구는 다시 합성하지 않습니다 |
+| TTS(render 안) | **ElevenLabs 또는 타입캐스트 크레딧**(글자 수 기준으로 추정, 타입캐스트의 차감 방식은 요금제에서 확인). 영상 1개당 대략 150~300자입니다. 같은 문구는 다시 합성하지 않습니다 |
 | 자막·렌더링 | 없음(내 컴퓨터의 ffmpeg) |
 
 ## 8. 지켜야 할 것

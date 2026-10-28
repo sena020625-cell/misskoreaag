@@ -6,9 +6,11 @@ from .base import TTSError, TTSProvider
 from .elevenlabs import ElevenLabsProvider
 from .mock import MockProvider
 from .per_line import PerLineProvider
+from .typecast import TypecastProvider
 
 PROVIDERS: dict[str, type[TTSProvider]] = {
     "elevenlabs": ElevenLabsProvider,
+    "typecast": TypecastProvider,
     "per_line": PerLineProvider,
     "mock": MockProvider,
 }
