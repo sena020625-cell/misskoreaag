@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>미쓰코리아 작업 화면</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #1d2330; --muted: #68718a; --line: #dfe3ec;
+    --brand: #17a35a; --brand-ink: #ffffff; --warn: #b45309; --warn-bg: #fff4e0; --bad: #b42318; --bad-bg: #fdecea;
+    --ok-bg: #e6f6ed; --accent: #2f5bea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14171f; --panel: #1c212c; --ink: #e8ebf3; --muted: #9aa3b8; --line: #2c3342;
+      --warn: #f5b25a; --warn-bg: #3a2c14; --bad: #ff8b7e; --bad-bg: #3a1a17; --ok-bg: #153024; --accent: #7e9bff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 "Pretendard", "Malgun Gothic", system-ui, sans-serif; }
+  header { padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel); display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 18px; margin: 0; }
+  header small { color: var(--muted); }
+  .wrap { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 56px); }
+  aside { border-right: 1px solid var(--line); background: var(--panel); padding: 12px; overflow: auto; }
+  aside h3 { margin: 14px 6px 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
+  .item { display: block; width: 100%; text-align: left; border: 1px solid transparent; background: none; color: inherit; padding: 9px 10px; border-radius: 10px; cursor: pointer; font: inherit; }
+  .item:hover { background: var(--bg); }
+  .item.sel { background: var(--bg); border-color: var(--line); }
+  .item b { display: block; font-weight: 600; }
+  .chips { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+  .chip { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); color: var(--muted); }
+  .chip.on { background: var(--ok-bg); border-color: transparent; color: var(--brand); font-weight: 600; }
+  main { padding: 20px; max-width: 920px; }
+  .empty { color: var(--muted); padding: 40px 10px; }
+  section.step { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; }
+  section.step h2 { margin: 0 0 10px; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+  .num { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; display: inline-grid; place-items: center; font-size: 13px; }
+  .done .num { background: var(--brand); }
+  .note { border-radius: 10px; padding: 10px 12px; margin: 8px 0; font-size: 14px; }
+  .note.warn { background: var(--warn-bg); color: var(--warn); }
+  .note.bad { background: var(--bad-bg); color: var(--bad); }
+  .note.ok { background: var(--ok-bg); color: var(--brand); }
+  .note ul { margin: 4px 0 0 18px; padding: 0; }
+  .tabs { display: flex; gap: 6px; margin: 8px 0; }
+  .tab { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; color: inherit; font: inherit; }
+  .tab.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .line { display: flex; gap: 6px; margin: 6px 0; align-items: flex-start; }
+  .line .n { width: 22px; color: var(--muted); padding-top: 7px; text-align: right; }
+  textarea, input[type=text], select { width: 100%; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; }
+  textarea { resize: vertical; min-height: 38px; }
+  button.btn { font: inherit; border: 1px solid var(--line); background: var(--bg); color: inherit; padding: 8px 14px; border-radius: 10px; cursor: pointer; }
+  button.btn:hover { border-color: var(--accent); }
+  button.primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); font-weight: 600; }
+  button.small { padding: 4px 9px; font-size: 13px; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .drop { border: 2px dashed var(--line); border-radius: 12px; padding: 22px; text-align: center; color: var(--muted); }
+  .drop.over { border-color: var(--accent); background: var(--bg); }
+  .vid { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  label.pick { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  .titles li { margin: 4px 0; display: flex; gap: 8px; align-items: center; }
+  .titles li.best { font-weight: 600; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  #toast { position: fixed; right: 18px; bottom: 18px; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; opacity: 0; transition: opacity .2s; max-width: 420px; white-space: pre-wrap; }
+  #toast.show { opacity: .96; }
+  @media (max-width: 760px) { .wrap { grid-template-columns: 1fr; } aside { border-right: 0; border-bottom: 1px solid var(--line); } .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header><h1>미쓰코리아 작업 화면</h1><small id="wd"></small></header>
+<div class="wrap">
+  <aside id="list"></aside>
+  <main id="main"><div class="empty">왼쪽에서 작업할 제품을 고르세요.<br>목록이 비어 있으면 Claude 앱에서 "링크와 제품명"으로 대본을 먼저 만들어 주세요.</div></main>
+</div>
+<div id="toast"></div>
+<script>
+const TOKEN = "__TOKEN__";
+let cur = null;        // {date,id}
+let job = null;        // 서버가 준 작업 상태
+let dirty = false;
+
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function toast(msg, ms = 3500) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), ms);
+}
+async function api(path, opts = {}) {
+  const r = await fetch(path, { ...opts, headers: { "X-Token": TOKEN, ...(opts.headers || {}) } });
+  const j = await r.json().catch(() => ({ error: "응답을 읽지 못했습니다" }));
+  if (!r.ok) throw new Error(j.error || "오류");
+  return j;
+}
+const post = (p, body) => api(p, { method: "POST", body: JSON.stringify(body || {}) });
+
+async function loadList() {
+  const d = await api("/api/jobs");
+  $("#wd").textContent = "작업 폴더: " + d.workdir;
+  const el = $("#list");
+  el.innerHTML = d.days.length ? "" : '<div class="empty">아직 대본이 없습니다.</div>';
+  for (const day of d.days) {
+    const h = document.createElement("h3");
+    h.textContent = `${day.date.slice(0,4)}-${day.date.slice(4,6)}-${day.date.slice(6)}`;
+    el.append(h);
+    for (const it of day.items) {
+      const b = document.createElement("button");
+      b.className = "item" + (cur && cur.date === day.date && cur.id === it.id ? " sel" : "");
+      b.innerHTML = `<b>${esc(it.product || it.id)}</b><span class="meta">${esc(it.brand)} · ${esc(it.id)}</span>
+        <div class="chips"><span class="chip ${it.approved ? "on" : ""}">검수${it.approved ? " 완료" : ""}</span>
+        <span class="chip ${it.videos ? "on" : ""}">영상 ${it.videos}</span>
+        <span class="chip ${it.voice ? "on" : ""}">음성</span>
+        <span class="chip ${it.capcut ? "on" : ""}">캡컷</span></div>`;
+      b.onclick = () => openJob(day.date, it.id);
+      el.append(b);
+    }
+  }
+}
+
+async function openJob(date, id) {
+  if (dirty && !confirm("저장하지 않은 수정이 있습니다. 버리고 이동할까요?")) return;
+  cur = { date, id };
+  try { job = await api(`/api/job/${date}/${id}`); } catch (e) { toast(e.message); return; }
+  dirty = false;
+  render();
+  loadList();
+}
+
+function selVersion() { return job.script.versions.find(v => v.version === job.script.selected_version) || job.script.versions[0]; }
+let tabVer = 1;
+
+function render() {
+  const s = job.script, r = s.review || {};
+  const approved = s.approved === true;
+  const sel = selVersion();
+  tabVer = sel.version;
+  const warnList = [];
+  if ((r.unverified || []).length) warnList.push(["확인 못 한 것", r.unverified]);
+  if ((r.compliance_flags || []).length) warnList.push(["심의 주의 표현", r.compliance_flags.map(c => `"${c.text}" → ${c.fix} (${c.issue})`)]);
+  if (r.needs_test_disclaimer) warnList.push(["표기 필요", ["영상 하단에 '인체적용시험 결과, 개인차 있음' 표기 필요"]]);
+  $("#main").innerHTML = `
+  <h2 style="margin:0 0 4px">${esc(s.product)} <span class="meta">(${esc(s.brand)})</span></h2>
+  <div class="meta" style="margin-bottom:12px">${s.source_url ? `<a href="${esc(s.source_url)}" target="_blank" rel="noopener">공식몰 페이지</a> · ` : ""}${esc(s.creator || "크리에이터 미기재")}</div>
+
+  <section class="step ${approved ? "done" : ""}"><h2><span class="num">1</span> 대본 검수</h2>
+    ${warnList.map(([t, a]) => `<div class="note warn"><b>${esc(t)}</b><ul>${a.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>`).join("")}
+    ${r.notes ? `<div class="note warn"><b>메모</b> ${esc(r.notes)}</div>` : ""}
+    <div class="tabs" id="tabs"></div>
+    <div id="verbox"></div>
+    <div class="grid2" style="margin-top:12px">
+      <div><div class="meta">상단 타이틀 1줄 (흰 글씨, 10자 안팎·최대 13자) <b id="c1"></b></div><input type="text" id="t1" maxlength="20" value="${esc(s.top_title?.line1)}"></div>
+      <div><div class="meta">상단 타이틀 2줄 (초록 박스, 10자 안팎·최대 13자) <b id="c2"></b></div><input type="text" id="t2" maxlength="20" value="${esc(s.top_title?.line2_green)}"></div>
+    </div>
+    <div class="meta" style="margin-top:6px">자막은 한 화면에 10자씩 자동으로 나뉘어 나옵니다(유튜브 화면 안쪽에 맞춤).</div>
+    <div style="margin-top:12px"><div class="meta">유튜브 제목 후보 (눌러서 복사)</div>
+      <ul class="titles" style="padding-left:18px">${(s.titles || []).map(t => `<li class="${t === s.best_title?.text ? "best" : ""}"><span>${esc(t)}${t === s.best_title?.text ? " ⭐" : ""}</span><button class="btn small" data-copy="${esc(t)}">복사</button></li>`).join("")}</ul></div>
+    <div style="margin-top:8px"><div class="meta">설명란</div><textarea id="desc" rows="8">${esc(s.description)}</textarea>
+      <div class="row"><button class="btn small" id="copydesc">설명란 복사</button></div></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="save">저장</button>
+      <button class="btn primary" id="approve" ${approved && !dirty ? "disabled" : ""}>${approved && !dirty ? "✓ 검수 완료됨" : "검수 완료"}</button>
+      <span class="meta" id="savemsg"></span>
+    </div>
+  </section>
+
+  <section class="step ${job.videos.length ? "done" : ""}"><h2><span class="num">2</span> 영상 넣기</h2>
+    <div class="meta" style="margin-bottom:6px">제품 하나에 영상 2~3개를 넣으면 컷마다 돌아가며 섞입니다. 사용 허락을 받은 영상만 넣어 주세요.</div>
+    <div class="drop" id="drop">여기에 영상을 끌어다 놓거나 <button class="btn small" id="pick">파일 고르기</button><input type="file" id="file" accept="video/*" multiple hidden></div>
+    <div id="vids">${job.videos.map(v => `<div class="vid"><span>${esc(v)}</span><button class="btn small" data-del="${esc(v)}">삭제</button></div>`).join("")}</div>
+  </section>
+
+  <section class="step ${job.voice ? "done" : ""}"><h2><span class="num">3</span> 음성 만들기</h2>
+    <div class="meta">${approved ? "검수가 끝난 대본으로 한국어 음성을 만듭니다(TTS 크레딧이 사용됩니다)." : "먼저 1번에서 '검수 완료'를 눌러 주세요."}</div>
+    <div class="row"><button class="btn primary" id="voice" ${approved ? "" : "disabled"}>${job.voice ? "음성 다시 만들기" : "음성 만들기"}</button>
+      ${job.voice ? `<audio controls src="/api/job/${cur.date}/${cur.id}/voice.mp3?t=${Date.now()}" id="player"></audio>` : ""}</div>
+  </section>
+
+  <section class="step ${s.capcut_draft ? "done" : ""}"><h2><span class="num">4</span> 캡컷으로 보내기</h2>
+    <div class="meta">서식 견본으로 쓸 기존 캡컷 프로젝트를 고르면, 같은 편집 방식으로 새 프로젝트가 만들어집니다. 기존 프로젝트는 바뀌지 않습니다.</div>
+    ${job.capcut_running ? '<div class="note bad">캡컷이 켜져 있습니다. 캡컷을 완전히 종료한 뒤 눌러 주세요.</div>' : ""}
+    <div class="row"><select id="tpl" style="max-width:320px">${job.templates.map(t => `<option>${esc(t)}</option>`).join("")}</select>
+      <button class="btn primary" id="capcut" ${job.voice && job.videos.length ? "" : "disabled"}>캡컷 프로젝트 만들기</button></div>
+    ${!job.voice || !job.videos.length ? '<div class="meta">음성과 영상이 모두 있어야 합니다.</div>' : ""}
+    ${s.capcut_draft ? `<div class="note ok">만들어진 프로젝트: <b>${esc(s.capcut_draft)}</b> — 캡컷을 열어 확인하세요.</div>` : ""}
+    <div class="row"><button class="btn small" id="openf">결과 폴더 열기</button></div>
+  </section>`;
+  drawVersions();
+  bind();
+}
+
+function drawVersions() {
+  const s = job.script;
+  $("#tabs").innerHTML = s.versions.map(v => `<button class="tab ${v.version === tabVer ? "sel" : ""}" data-tab="${v.version}">버전 ${v.version}${v.version === s.selected_version ? " (사용)" : ""}</button>`).join("");
+  const v = s.versions.find(x => x.version === tabVer);
+  $("#verbox").innerHTML = `
+    ${v.lines.map((l, i) => `<div class="line"><span class="n">${i + 1}</span><textarea rows="1" data-i="${i}">${esc(l)}</textarea><button class="btn small" data-rm="${i}" title="줄 삭제">−</button></div>`).join("")}
+    <div class="row"><button class="btn small" id="addline">+ 줄 추가</button>
+      <label class="pick"><input type="radio" name="use" ${v.version === s.selected_version ? "checked" : ""} id="use"> 이 버전으로 만들기</label>
+      <span class="meta" id="est"></span></div>`;
+  calc();
+}
+
+function calc() {
+  const v = job.script.versions.find(x => x.version === tabVer);
+  const lines = v.lines.map(x => x.trim()).filter(Boolean);
+  const sec = Math.round(lines.join("").length / 7.5 * 10) / 10;
+  const ok = sec >= 16 && sec <= 30 && lines.length >= 4 && lines.length <= 7;
+  const el = $("#est");
+  if (el) { el.textContent = `${lines.length}줄 · 약 ${sec}초 ${ok ? "✓" : "(16~30초, 4~7줄이어야 합니다)"}`; el.style.color = ok ? "var(--brand)" : "var(--bad)"; }
+}
+
+function titleCount() {
+  for (const [i, id] of [["c1", "t1"], ["c2", "t2"]]) {
+    const el = $("#" + i), inp = $("#" + id); if (!el || !inp) continue;
+    const n = inp.value.length;
+    el.textContent = `${n}자`; el.style.color = n > 13 ? "var(--bad)" : n > 10 ? "var(--warn)" : "var(--brand)";
+  }
+}
+
+function markDirty() {
+  dirty = true; job.script.approved = false;
+  const b = $("#approve"); if (b) { b.disabled = false; b.textContent = "검수 완료"; }
+  const m = $("#savemsg"); if (m) m.textContent = "수정됨 · 저장하지 않았습니다";
+  ["voice", "capcut"].forEach(id => { const x = $("#" + id); if (x && id === "voice") x.disabled = true; });
+}
+
+function collect() {
+  const s = job.script;
+  return { versions: s.versions.map(v => ({ version: v.version, lines: v.lines })),
+    selected_version: s.selected_version,
+    top_title: { line1: $("#t1").value, line2_green: $("#t2").value },
+    description: $("#desc").value };
+}
+
+async function save(approved) {
+  const body = collect(); body.approved = approved;
+  try {
+    const r = await post(`/api/job/${cur.date}/${cur.id}/save`, body);
+    job.script = r.script; dirty = false;
+    toast(approved ? "검수 완료로 저장했습니다" : "저장했습니다");
+    job = await api(`/api/job/${cur.date}/${cur.id}`);
+    render(); loadList();
+  } catch (e) { toast(e.message, 6000); }
+}
+
+async function busy(btn, label, fn) {
+  const old = btn.textContent; btn.disabled = true; btn.textContent = label;
+  try { await fn(); } catch (e) { toast(e.message, 9000); } finally { btn.textContent = old; btn.disabled = false; }
+}
+
+async function uploadFiles(files) {
+  for (const f of files) {
+    toast(`올리는 중: ${f.name}`, 60000);
+    try { await api(`/api/job/${cur.date}/${cur.id}/upload?name=${encodeURIComponent(f.name)}`, { method: "POST", body: f }); }
+    catch (e) { toast(e.message, 6000); return; }
+  }
+  toast("영상을 넣었습니다");
+  job = await api(`/api/job/${cur.date}/${cur.id}`); render(); loadList();
+}
+
+function bind() {
+  const main = $("#main");
+  main.onclick = async (e) => {
+    const t = e.target.closest("button, input[type=radio]"); if (!t) return;
+    const s = job.script;
+    if (t.dataset.tab) { tabVer = +t.dataset.tab; drawVersions(); }
+    else if (t.dataset.rm !== undefined) { const v = s.versions.find(x => x.version === tabVer); v.lines.splice(+t.dataset.rm, 1); markDirty(); drawVersions(); }
+    else if (t.id === "addline") { s.versions.find(x => x.version === tabVer).lines.push(""); markDirty(); drawVersions(); }
+    else if (t.id === "use") { s.selected_version = tabVer; markDirty(); drawVersions(); }
+    else if (t.dataset.copy !== undefined) { await navigator.clipboard.writeText(t.dataset.copy); toast("복사했습니다"); }
+    else if (t.id === "copydesc") { await navigator.clipboard.writeText($("#desc").value); toast("설명란을 복사했습니다"); }
+    else if (t.id === "save") save(false);
+    else if (t.id === "approve") save(true);
+    else if (t.id === "pick") $("#file").click();
+    else if (t.dataset.del) { if (confirm("이 영상을 목록에서 삭제할까요?")) { await post(`/api/job/${cur.date}/${cur.id}/delete-video`, { name: t.dataset.del }); job = await api(`/api/job/${cur.date}/${cur.id}`); render(); loadList(); } }
+    else if (t.id === "voice") busy(t, "만드는 중…(잠시 걸립니다)", async () => { await post(`/api/job/${cur.date}/${cur.id}/voice`, { force: job.voice }); toast("음성을 만들었습니다"); job = await api(`/api/job/${cur.date}/${cur.id}`); render(); loadList(); });
+    else if (t.id === "capcut") busy(t, "만드는 중…", async () => { const r = await post(`/api/job/${cur.date}/${cur.id}/capcut`, { template: $("#tpl").value }); toast(`캡컷 프로젝트를 만들었습니다: ${r.name}`, 8000); job = await api(`/api/job/${cur.date}/${cur.id}`); render(); loadList(); });
+    else if (t.id === "openf") post(`/api/job/${cur.date}/${cur.id}/open`);
+  };
+  main.oninput = (e) => {
+    const ta = e.target;
+    if (ta.dataset.i !== undefined) { job.script.versions.find(x => x.version === tabVer).lines[+ta.dataset.i] = ta.value; calc(); markDirty(); }
+    else if (ta.id === "t1" || ta.id === "t2" || ta.id === "desc") { titleCount(); markDirty(); }
+  };
+  titleCount();
+  const file = $("#file"); if (file) file.onchange = () => { uploadFiles([...file.files]); file.value = ""; };
+  const drop = $("#drop");
+  if (drop) {
+    drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
+    drop.ondragleave = () => drop.classList.remove("over");
+    drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); uploadFiles([...e.dataTransfer.files]); };
+  }
+}
+
+loadList();
+</script>
+</body>
+</html>

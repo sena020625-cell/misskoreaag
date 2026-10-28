@@ -13,3 +13,7 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# 캡컷 연결 시험 산출물, 캡컷 목록 백업(개인 PC 데이터)
+backup/
+capcut_out/

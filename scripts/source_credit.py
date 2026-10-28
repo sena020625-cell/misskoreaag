@@ -216,10 +216,73 @@ def apply_source(out_dir: Path, link: str, csv_creator: str, resolver: Optional[
                         else f"직접 확인 필요: {mismatch or info.note}")}
 
 
+def build_description_many(description: str, creators: list[str], urls: list[str]) -> str:
+    """영상이 여러 개일 때: 📷I 한 줄에 계정을 모두 적고, 🔗 원본 줄을 링크마다 붙인다."""
+    kept = [ln for ln in description.split("\n") if not ln.startswith(("📷", "🔗 원본"))]
+    text = "\n".join(kept).rstrip()
+    extra = []
+    if creators:
+        extra.append("📷I " + ", ".join(creators))
+    extra += [f"🔗 원본: {u}" for u in urls if u]
+    return text + ("\n\n" + "\n".join(extra) if extra else "")
+
+
+def apply_sources(out_dir: Path, links: list[str], resolver: Optional[Resolver] = resolve_redirect) -> dict:
+    """제품 하나에 원본 영상이 여러 개인 경우 출처를 반영한다. 여러 번 실행해도 결과가 같다."""
+    json_path, md_path = out_dir / "script.json", out_dir / "script.md"
+    script = load_script(json_path)
+    links = [l.strip() for l in links if l and l.strip()]
+    if not links:
+        return {"status": "skipped", "message": "원본 링크가 없어 건너뜀"}
+    infos = [parse_source_link(l, resolver=resolver) for l in links]
+    creators, seen = [], set()
+    for i in infos:
+        if i.handle and i.handle.lower() not in seen:
+            seen.add(i.handle.lower())
+            creators.append(i.handle)
+    manual = [i for i in infos if i.status != "ok"]
+    urls = [i.url or i.original for i in infos]
+
+    script["video_link"] = links[0]
+    script["video_links"] = links
+    script["creator"] = ", ".join(creators)
+    script["source"] = {k: v for k, v in asdict(infos[0]).items() if k != "original"}
+    script["description"] = build_description_many(script.get("description", ""), creators, urls)
+    review = script.setdefault("review", {})
+    sources = [s for s in review.get("sources", []) if s.get("label") != SOURCE_LABEL]
+    for n, i in enumerate(infos, 1):
+        if i.url:
+            sources.append({"label": SOURCE_LABEL, "url": i.url,
+                            "used_for": f"설명란 출처 표기 (영상 {n}, {i.handle or '크리에이터 확인 필요'})"})
+    review["sources"] = sources
+    sentence = ""
+    if manual:
+        sentence = "원본 출처를 직접 확인하세요. " + " / ".join(
+            f"영상 {infos.index(i) + 1}: {i.note or '계정을 확인하지 못했습니다.'}" for i in manual)
+        review["needs_review"] = True
+    review["notes"] = _clean_notes(review.get("notes", ""), bool(creators), sentence)
+    json_path.write_text(json.dumps(script, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    if md_path.is_file():
+        line = ("- 원본 출처: " + ", ".join(f"{i.platform} {i.handle or '직접 확인 필요'}" for i in infos)
+                + f" ({len(infos)}개 영상, 링크에서 자동 추출, 사용 허락은 별도 확인)")
+        md_path.write_text(_update_markdown(md_path.read_text(encoding="utf-8"), script["description"], line, bool(creators)),
+                           encoding="utf-8")
+    return {"status": "manual" if manual else "ok", "creators": creators,
+            "message": (f"{', '.join(creators)} 를 설명란에 반영 (원본 {len(infos)}개)" if not manual
+                        else f"직접 확인 필요 {len(manual)}건 (원본 {len(infos)}개)")}
+
+
 def main() -> int:
     configure_stdout()
     parser = argparse.ArgumentParser(description="원본 링크에서 출처(@핸들)를 뽑아 설명란에 반영")
     sub = parser.add_subparsers(dest="cmd", required=True)
+    p_many = sub.add_parser("apply-many", help="원본 영상이 여러 개일 때 한 번에 출처를 반영한다")
+    p_many.add_argument("id")
+    p_many.add_argument("--date", default=today())
+    p_many.add_argument("--workdir", default=".")
+    p_many.add_argument("--links", nargs="+", required=True)
+    p_many.add_argument("--no-resolve", action="store_true")
     p_parse = sub.add_parser("parse", help="링크만 해석해 보여준다(파일 변경 없음)")
     p_parse.add_argument("link")
     p_parse.add_argument("--no-resolve", action="store_true", help="단축 링크를 따라가지 않는다")
@@ -236,6 +299,15 @@ def main() -> int:
     if args.cmd == "parse":
         info = parse_source_link(args.link, resolver=resolver)
         print(json.dumps(asdict(info), ensure_ascii=False, indent=2))
+        return 0
+    if args.cmd == "apply-many":
+        try:
+            out = item_dir(Path(args.workdir).resolve(), args.date, args.id)
+            result = apply_sources(out, args.links, resolver=resolver)
+        except ScriptError as exc:
+            print(f"[{args.id}] 실패: {exc}")
+            return 1
+        print(f"[{args.id}] 출처: {result['message']}")
         return 0
     try:
         out = item_dir(Path(args.workdir).resolve(), args.date, args.id)
