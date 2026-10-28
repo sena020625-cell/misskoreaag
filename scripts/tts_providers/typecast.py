@@ -59,7 +59,8 @@ class TypecastSettings:
         key = require_env(env, "TYPECAST_API_KEY", "타입캐스트 개발자 콘솔에서 발급한 API 키를 넣어주세요.")
         voice = require_env(env, "TYPECAST_VOICE_ID", "채널 고정 보이스 ID(tc_ 로 시작)를 넣어주세요.")
         if not voice.startswith(("tc_", "uc_")):
-            raise TTSError(f".env의 TYPECAST_VOICE_ID '{voice}'는 tc_(기본 보이스) 또는 uc_(커스텀 보이스)로 시작해야 합니다.")
+            raise TTSError(f".env의 TYPECAST_VOICE_ID '{voice}'는 보이스 ID가 아닌 것 같습니다. tc_(기본 보이스) 또는 uc_(커스텀 보이스)로 시작해야 합니다. "
+                           f"보이스 이름으로 ID를 찾으려면: python typecast_voices.py {voice}")
         model = (env.get("TYPECAST_MODEL") or "ssfm-v30").strip()
         if model not in MODELS:
             raise TTSError(f".env의 TYPECAST_MODEL을 {', '.join(MODELS)} 중에서 골라주세요(현재: '{model}').")

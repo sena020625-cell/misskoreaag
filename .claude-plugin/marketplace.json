@@ -9,7 +9,7 @@
       "name": "misskorea",
       "source": "./",
       "description": "미쓰코리아 쇼츠 제작 자동화: K-뷰티 스크립트 생성, TTS 더빙, 자막, 렌더링",
-      "version": "0.1.2"
+      "version": "0.1.3"
     }
   ]
 }

@@ -63,7 +63,7 @@ argument-hint: "[--date YYYYMMDD] [--csv 경로] [--only id1,id2] [--overwrite]"
 - `versions`가 2개이고 각각 `lines`가 4~7줄이다.
 - `selected_version`이 1, `approved`가 `false`다.
 - `best_title.text`와 `top_title.line1`, `top_title.line2_green`이 비어 있지 않다.
-- 버전마다 `est_seconds`가 `lines`를 이어 붙인 글자 수(공백 포함) ÷ 5.5와 소수 첫째 자리까지 일치하고, 16~30초 범위 안이다. 값만 틀렸으면 다시 생성하지 말고 계산한 값으로 고친다. 범위를 벗어나면 다시 생성 대상이다.
+- 버전마다 `est_seconds`가 `lines`를 이어 붙인 글자 수(공백 포함) ÷ 7.5와 소수 첫째 자리까지 일치하고, 16~30초 범위 안이다. 값만 틀렸으면 다시 생성하지 말고 계산한 값으로 고친다. 범위를 벗어나면 다시 생성 대상이다.
 
 하나라도 어긋나면 그 id를 **다시 1회** 생성해 본다. 그래도 어긋나면 실패로 기록하고 사유를 적는다.
 

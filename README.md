@@ -79,6 +79,12 @@ TYPECAST_MODEL=ssfm-v30
 TYPECAST_LANGUAGE=kor
 ```
 
+**보이스 ID는 이름(예: 혜원)이 아니라 `tc_`로 시작하는 값입니다.** 이름으로 ID를 찾으려면 작업 폴더에 `.env`(API 키)를 만든 뒤 아래를 실행합니다(조회만 하며 크레딧이 들지 않습니다). `<플러그인 폴더>`는 `~/.claude/plugins/cache/misskorea-marketplace/misskorea/<버전>`입니다.
+
+```
+python <플러그인 폴더>/scripts/typecast_voices.py 혜원
+```
+
 - 속도, 음높이, 음량, 감정(`TYPECAST_EMOTION=smart` 등)은 선택입니다. 설명은 `templates/.env.example`에 있습니다.
 - 타입캐스트의 글자 타이밍이 문구와 맞지 않는다는 오류가 나면 `TTS_PROVIDER=per_line`, `PER_LINE_BACKEND=typecast`로 바꿔 보세요. 줄마다 합성해 이어 붙이는 대안입니다.
 - **API 키는 본인 것만 쓰고 절대 공유·커밋하지 마세요.** `.env`는 작업 폴더 안에만 둡니다.
