@@ -37,6 +37,7 @@ argument-hint: "[id ...] [--date YYYYMMDD] [--preview 초] [--force-tts]"
 1. `id`가 주어지면 그 id들을, 없으면 `output/<날짜>/*/script.json` 중 `approved`가 `true`인 id 전부를 대상으로 한다.
 2. 대상이 없으면 "승인된 대본이 없습니다. `script.json`에서 검수 후 `approved`를 `true`로 바꿔주세요."라고 알리고 멈춘다.
 3. 주어진 id 중 `approved`가 `true`가 아닌 것은 대상에서 빼고 이유를 알린다. `--allow-unapproved` 같은 우회 옵션은 쓰지 않는다.
+   - `script.json`의 `permission`이 없거나 `granted`가 `true`가 아니거나 `note`(허락 근거)가 비어 있는 id도 대상에서 빼고, "사용 허락이 기록되지 않았습니다. `batch.csv`의 `사용허락` 칸을 채우거나 `permission.py set <id> --value \"Y 날짜 방법\"`을 실행해주세요."라고 알린다. `--skip-permission-check`는 쓰지 않는다(스크립트도 같은 이유로 막는다).
 4. 대상 중 `input/videos/<id>.mp4`가 없는 id는 빼고 "원본 영상을 `input/videos/<id>.mp4`로 넣어주세요."라고 알린다.
 5. 남은 id가 없으면 멈춘다.
 

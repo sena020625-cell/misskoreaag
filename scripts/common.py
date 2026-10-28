@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from datetime import date
 from pathlib import Path
@@ -68,6 +69,40 @@ def load_template(workdir: Path) -> dict:
 
     return _deep_merge(read(PLUGIN_ROOT / "config" / "template.yaml"),
                        read(workdir / "config" / "template.yaml"))
+
+
+# ---- 사용 허락 기록 ----
+# batch.csv 의 '사용허락' 칸이나 permission.py 로 script.json 에 남기고, tts.py·render.py 가 확인한다.
+
+_NEGATIVE = {"", "n", "no", "x", "false", "0", "-", "아니오", "아니요", "없음", "미확인", "대기", "확인중",
+             "확인 중", "보류", "불가", "거절"}
+
+PERMISSION_FIX = ("고치는 방법: batch.csv 의 '사용허락' 칸에 'Y 날짜 방법'(예: Y 2026-10-20 DM 승인)을 적고 다시 실행하거나, "
+                  "python permission.py set <id> --value \"Y 2026-10-20 DM 승인\" 을 실행하세요.")
+
+
+def parse_permission(raw: str | None) -> dict:
+    """'사용허락' 칸의 글을 {granted, note} 로 바꾼다. 비었거나 N, 아니오, 미확인, 대기 같은 값이면 허락 아님."""
+    note = (raw or "").strip()
+    first = re.split(r"[\s:,;()/]+", note.lower())[0] if note else ""
+    granted = bool(note) and note.lower() not in _NEGATIVE and first not in _NEGATIVE
+    return {"granted": granted, "note": note}
+
+
+def permission_status(script: dict) -> tuple[bool, str]:
+    """script.json 에 사용 허락이 근거와 함께 기록돼 있는지 확인한다. (통과 여부, 막힌 이유)"""
+    perm = script.get("permission")
+    if not isinstance(perm, dict):
+        return False, "script.json 에 사용 허락 기록(permission)이 없습니다."
+    if perm.get("granted") is not True:
+        return False, "사용 허락이 확인되지 않았습니다(permission.granted 가 true 가 아님)."
+    if not str(perm.get("note", "")).strip():
+        return False, "사용 허락 근거(permission.note)가 비어 있습니다. 허락 날짜와 방법을 적어주세요."
+    return True, ""
+
+
+def write_script(path: Path, script: dict) -> None:
+    path.write_text(json.dumps(script, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def item_dir(workdir: Path, day: str, item_id: str) -> Path:

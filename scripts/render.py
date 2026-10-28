@@ -20,8 +20,8 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from common import (PLUGIN_ROOT, ScriptError, configure_stdout, item_dir, list_ids, load_script,
-                    load_template, today)
+from common import (PERMISSION_FIX, PLUGIN_ROOT, ScriptError, configure_stdout, item_dir, list_ids, load_script,
+                    load_template, permission_status, today)
 
 
 # ---- 설정 ----
@@ -210,6 +210,10 @@ def render_one(item_id: str, args, workdir: Path, cfg: dict) -> Path:
     script = load_script(out_dir / "script.json")
     if script.get("approved") is not True and not args.allow_unapproved:
         raise ScriptError("승인되지 않았습니다. script.json 의 approved 를 true 로 바꾸거나 --allow-unapproved 를 쓰세요.")
+    if args.preview is None and not args.skip_permission_check:
+        allowed, reason = permission_status(script)
+        if not allowed:
+            raise ScriptError(f"{reason}\n{PERMISSION_FIX}")
     src = workdir / "input" / "videos" / f"{item_id}.mp4"
     voice, srt_path = out_dir / "voice.mp3", out_dir / "subtitle.srt"
     for path, hint in ((src, "원본 영상을 input/videos/ 에 넣어주세요"),
@@ -269,6 +273,7 @@ def main() -> int:
     parser.add_argument("--workdir", default=".", help="작업 폴더")
     parser.add_argument("--preview", type=float, metavar="SEC", help="SEC 초 지점 한 장을 preview.png 로 저장")
     parser.add_argument("--allow-unapproved", action="store_true", help="approved 가 아니어도 처리(시험용)")
+    parser.add_argument("--skip-permission-check", action="store_true", help="사용 허락 기록이 없어도 처리(시험용, 실제 영상에는 쓰지 말 것)")
     args = parser.parse_args()
 
     workdir = Path(args.workdir).resolve()

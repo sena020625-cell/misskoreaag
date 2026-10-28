@@ -17,7 +17,8 @@ import json
 import sys
 from pathlib import Path
 
-from common import ScriptError, configure_stdout, item_dir, list_ids, load_env, load_script, selected_lines, today
+from common import (PERMISSION_FIX, ScriptError, configure_stdout, item_dir, list_ids, load_env, load_script,
+                    permission_status, selected_lines, today)
 from tts_providers import PROVIDERS, get_provider
 from tts_providers.base import TTSError
 
@@ -42,6 +43,10 @@ def run_one(item_id: str, args, workdir: Path, env: dict) -> bool:
     script = load_script(out / "script.json")
     if script.get("approved") is not True and not args.allow_unapproved:
         print(f"[{item_id}] 건너뜀: 승인되지 않았습니다. script.json의 approved를 true로 바꾸거나 --allow-unapproved를 쓰세요.")
+        return False
+    allowed, reason = permission_status(script)
+    if not allowed and not args.skip_permission_check:
+        print(f"[{item_id}] 건너뜀: {reason}\n{PERMISSION_FIX}")
         return False
     lines = selected_lines(script)
     provider_name = args.provider or env.get("TTS_PROVIDER") or "elevenlabs"
@@ -95,6 +100,7 @@ def main() -> int:
     parser.add_argument("--force", action="store_true", help="이미 있어도 다시 생성")
     parser.add_argument("--dry-run", action="store_true", help="API를 부르지 않고 내용만 확인")
     parser.add_argument("--allow-unapproved", action="store_true", help="approved 가 아니어도 처리(시험용)")
+    parser.add_argument("--skip-permission-check", action="store_true", help="사용 허락 기록이 없어도 처리(시험용, 실제 영상에는 쓰지 말 것)")
     args = parser.parse_args()
 
     workdir = Path(args.workdir).resolve()

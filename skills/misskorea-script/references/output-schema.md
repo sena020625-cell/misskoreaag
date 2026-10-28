@@ -62,6 +62,7 @@ script.md     # 사람 검수용
 - `versions[].lines`가 TTS 입력이다. 줄 하나가 자막과 타이밍의 기본 단위가 된다.
 - `needs_review`: `unverified`, `compliance_flags`, `needs_test_disclaimer` 중 하나라도 해당되거나 품절 표기가 있으면 `true`. 해당 항목이 없어도 사람 검수는 항상 거치므로, 이 값은 "특히 주의해서 볼 것이 있는가"를 뜻한다.
 - 모르는 값(크리에이터, 영문 제품 라인 등)은 빈 문자열로 둔다. 지어내지 않는다.
+- `permission`({"granted": true/false, "note": "허락 근거"})과 `video_file`(영상링크로 받은 경우 경로, 출처 주소, 크기, 해시, 시각)은 `/misskorea:batch`가 `scripts/permission.py`, `scripts/fetch_source.py`로 기록한다. 스킬은 이 값을 만들거나 바꾸지 않는다. `permission`이 근거와 함께 `granted: true`가 아니면 tts.py와 render.py가 처리하지 않는다.
 - `source`, 설명란 맨 아래의 `📷I @핸들`과 `🔗 원본: 주소` 줄, `review.sources`의 "원본 영상 출처" 항목은 `/misskorea:batch`가 대본을 만든 뒤 `scripts/source_credit.py`로 자동으로 채운다. 스킬은 이 값을 직접 만들지 않는다(크리에이터를 입력받지 못했다면 기존 규칙대로 `📷I` 줄을 빼고 검수 메모에 알린다).
 - 파일은 UTF-8, 들여쓰기 2칸, 한글을 이스케이프하지 않는다.
 

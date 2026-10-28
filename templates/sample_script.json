@@ -9,6 +9,7 @@
   "video_link": "",
   "selected_version": 1,
   "approved": false,
+  "permission": { "granted": true, "note": "테스트용 샘플(실제 영상 아님, 업로드 금지)" },
   "versions": [
     {
       "version": 1,

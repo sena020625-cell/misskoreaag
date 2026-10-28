@@ -88,7 +88,7 @@ cd C:\misskoreaag
 python -m unittest discover -s tests
 ```
 
-**통과 기준:** `Ran 67 tests ... OK`. 실패하면 Python 버전이나 패키지(`pip install ...`)부터 확인하세요.
+**통과 기준:** `Ran 94 tests ... OK`. 실패하면 Python 버전이나 패키지(`pip install ...`)부터 확인하세요.
 
 ---
 
@@ -264,6 +264,23 @@ TYPECAST_LANGUAGE=kor
 python C:\misskoreaag\scripts\source_credit.py parse "https://www.tiktok.com/@계정/video/숫자"
 ```
 
+### 8-7. 사용 허락 차단과 영상링크 받기
+
+1. **차단 확인(무료):** `batch.csv`의 `사용허락` 칸을 비운 채 `/misskorea:batch`를 실행하고 `script.json`에서 `approved`를 `true`로 바꿉니다. `/misskorea:render`를 실행하면 **음성 생성 전에** "사용 허락이 확인되지 않았습니다"로 건너뛰어야 합니다. `summary.md`의 `허락` 칸은 "미확인"입니다. (`--preview`는 허락 없이도 됩니다.)
+2. **허락 기록:** 작업 폴더에서 아래를 실행한 뒤 다시 `/misskorea:render`를 실행하면 진행됩니다.
+
+   ```text
+   python C:\misskoreaag\scripts\permission.py set 001 --value "Y 2026-10-20 DM 승인"
+   ```
+3. **영상링크 받기:** `batch.csv`의 `영상링크`에 **본인이 가진 영상의 드라이브 공유 링크**("링크가 있는 모든 사용자")를 넣고 `사용허락`에 근거를 적은 뒤 `/misskorea:batch --overwrite`(승인 전 대본일 때)를 실행합니다. `input\videos\001.mp4`가 생기고 `script.json`에 `video_file`(주소, 크기, 해시)이 남아야 합니다. 개발 PC에서는 가짜 응답으로만 시험했고 **실제 드라이브·드롭박스 링크로는 아직 확인하지 못했습니다.**
+4. **SNS 링크 거절:** `영상링크`에 `tiktok.com`이나 `youtube.com` 주소를 넣으면 "SNS 영상 링크나 다운로더 사이트는 받지 않습니다" 안내와 함께 받지 않아야 합니다.
+
+링크 하나만 직접 시험하려면 작업 폴더에서 실행합니다(허락이 기록된 `script.json`이 있어야 합니다).
+
+```text
+python C:\misskoreaag\scripts\fetch_source.py 001 --url "https://drive.google.com/file/d/파일ID/view" --date 20261026
+```
+
 ---
 
 ## 9. 체크리스트
@@ -271,7 +288,7 @@ python C:\misskoreaag\scripts\source_credit.py parse "https://www.tiktok.com/@�
 | # | 확인 항목 | 방법 | 결과 |
 |---|---|---|---|
 | 1 | `python --version`, `ffmpeg -version`이 실행된다 | 1장 | ☐ |
-| 2 | 단위 테스트 67건이 통과한다 | F | ☐ |
+| 2 | 단위 테스트 94건이 통과한다 | F | ☐ |
 | 3 | 스모크 테스트 3단계가 성공하고 `final.mp4`가 재생된다 | E | ☐ |
 | 4 | 플러그인이 설치·활성화된다 | A (또는 B, C, D) | ☐ |
 | 5 | `/misskorea`에 `batch`, `render`가 보인다 | A~D | ☐ |
@@ -284,6 +301,9 @@ python C:\misskoreaag\scripts\source_credit.py parse "https://www.tiktok.com/@�
 | 12 | 타입캐스트 음성이 나오고 자막 타이밍이 맞는다(타입캐스트를 쓰는 경우) | 8-5 | ☐ |
 | 13 | `원본링크`를 적은 줄의 설명란 맨 아래에 `📷I @계정`과 `🔗 원본` 줄이 자동으로 들어간다 | 8-6 | ☐ |
 | 14 | TikTok 단축 링크(`vm.tiktok.com/...`)에서 계정을 알아낸다(**아직 실제 링크로 확인하지 못함**) | 8-6 | ☐ |
+| 15 | `사용허락`이 빈 줄은 `/misskorea:render`가 음성 생성 전에 막고, 채우면 진행된다 | 8-7 | ☐ |
+| 16 | 허락이 있는 줄의 `영상링크`(드라이브 등)가 `input\videos\<id>.mp4`로 받아진다(**실제 드라이브 링크로는 아직 확인하지 못함**) | 8-7 | ☐ |
+| 17 | SNS 링크를 `영상링크`에 넣으면 거절되고 안내가 나온다 | 8-7 | ☐ |
 
 ## 10. 결과 보고 양식
 

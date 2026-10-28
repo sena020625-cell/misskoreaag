@@ -95,8 +95,10 @@ python <플러그인 폴더>/scripts/typecast_voices.py 혜원
 첫 줄(헤더)은 아래와 똑같이 씁니다. 파일은 **UTF-8**로 저장합니다(엑셀: "CSV UTF-8(쉼표로 분리)").
 
 ```
-id,제품명,공식몰URL,원본링크,원본메모,훅,강조포인트,크리에이터
+id,제품명,공식몰URL,원본링크,원본메모,훅,강조포인트,크리에이터,영상링크,사용허락
 ```
+
+(`영상링크`와 `사용허락`은 선택 열입니다. 앞의 8개 열만 있는 예전 CSV도 그대로 쓸 수 있습니다.)
 
 | 열 | 필수 | 설명 |
 |---|---|---|
@@ -108,6 +110,25 @@ id,제품명,공식몰URL,원본링크,원본메모,훅,강조포인트,크리�
 | 훅 | | 원하는 첫 줄이 있으면 적습니다 |
 | 강조포인트 | | 꼭 넣고 싶은 특징 |
 | 크리에이터 | | 설명란의 `📷I` 줄에 들어갑니다. 비워두면 `원본링크`의 계정을 자동으로 씁니다. 둘 다 없으면 그 줄이 빠지고 검수 메모에 알림이 뜹니다 |
+| 영상링크 | | **영상 제작자가 직접 준 파일 링크**(구글 드라이브, 드롭박스, 직접 파일 주소). `사용허락`이 확인된 줄만 `input/videos/<id>.mp4`로 자동으로 받습니다 |
+| 사용허락 | | **허락 근거**를 적습니다. 예: `Y 2026-10-20 DM 승인`. 비어 있거나 `N`, `아니오`, `미확인`, `대기`면 허락 없음입니다 |
+
+**사용 허락 기록과 차단:** `사용허락` 값은 `script.json`의 `permission`에 `{"granted": true, "note": "근거"}`로 기록됩니다. **허락이 근거와 함께 기록되지 않은 영상은 음성 생성(TTS)과 렌더링이 막힙니다**(화면 배치 미리보기 `--preview`만 가능). 허락을 확인한 뒤 CSV의 `사용허락` 칸을 채워 다시 만들거나, 아래 명령으로 기록하세요.
+
+```
+python <플러그인 폴더>/scripts/permission.py set 001 --value "Y 2026-10-20 DM 승인"
+```
+
+- 허락은 **사람이 확인해서 적는 값**입니다. 이 도구는 허락 여부를 알아내지 못합니다. 출처 표기도 허락을 대신하지 않습니다.
+- 이전 버전으로 만든 대본에는 `permission`이 없어서 업데이트 후 렌더링이 막힙니다. 위 명령으로 한 번 기록해 주세요.
+
+**영상링크로 받기:** `/misskorea:batch`가 `사용허락`이 확인된 줄의 `영상링크`를 `input/videos/<id>.mp4`로 받고, 출처 주소(쿼리 제외)·크기·해시·시각을 `script.json`의 `video_file`에 남깁니다.
+
+- **TikTok, Instagram, YouTube, X 같은 SNS 링크와 다운로더 사이트는 거절합니다.** 영상 제작자가 직접 보낸 파일 링크만 받습니다.
+- https 링크만 받고, 내 컴퓨터나 사내망 주소로 가는 링크는 막습니다. 500MB를 넘으면 받지 않고, 받은 파일이 영상이 아니면 지웁니다.
+- 구글 드라이브는 "링크가 있는 모든 사용자"로 공유돼야 하고, 용량이 크면 확인 화면이 떠서 실패할 수 있습니다. 그때는 파일을 직접 받아 `input/videos/<id>.mp4`로 넣으세요.
+- 이미 `input/videos/<id>.mp4`가 있으면 건너뜁니다.
+- 수동 실행: `python <플러그인 폴더>/scripts/fetch_source.py 001 --url "<링크>" --date 20261026`
 
 **출처 자동 표기:** `/misskorea:batch`가 대본을 만든 뒤 `원본링크`에서 크리에이터를 읽어 설명란 맨 아래에 아래처럼 넣습니다. 영상을 내려받지 않고 링크 주소만 읽습니다.
 
@@ -137,7 +158,7 @@ id,제품명,공식몰URL,원본링크,원본메모,훅,강조포인트,크리�
 오늘 만들 제품을 `input/batch.csv`에 한 줄씩 적습니다.
 
 ### ② 원본 영상 넣기
-`input/videos/<id>.mp4`로 직접 넣습니다. 틱톡·인스타그램 영상을 자동으로 받는 기능은 **일부러 만들지 않았습니다**. 사용 허락을 받은 파일만 넣어주세요.
+영상 제작자에게 **사용 허락**을 받고, 파일을 `input/videos/<id>.mp4`로 직접 넣거나 제작자가 준 파일 링크를 CSV의 `영상링크`에 적고 `사용허락`에 허락 근거를 적습니다(`/misskorea:batch`가 받아 줍니다). 틱톡·인스타그램 영상을 자동으로 받는 기능은 **일부러 만들지 않았습니다**.
 
 ### ③ 대본 일괄 생성
 작업 폴더에서 Claude Code를 열고 입력합니다.
@@ -277,7 +298,7 @@ misskorea/
 ├─ .claude-plugin/{plugin.json, marketplace.json}   저장소 자체가 마켓플레이스
 ├─ skills/misskorea-script/                         대본 생성 스킬 + references(스타일·심의·스키마)
 ├─ commands/{batch.md, render.md}
-├─ scripts/{tts.py, subtitle.py, render.py, source_credit.py, typecast_voices.py, common.py, tts_providers/}
+├─ scripts/{tts.py, subtitle.py, render.py, source_credit.py, permission.py, fetch_source.py, typecast_voices.py, common.py, tts_providers/}
 ├─ config/template.yaml                             화면 모양 기본값
 ├─ assets/fonts/                                    폰트와 라이선스
 ├─ templates/{batch.csv, .env.example}
