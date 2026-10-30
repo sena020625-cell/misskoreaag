@@ -225,7 +225,7 @@ misskorea/
 ├─ config/template.yaml                             ffmpeg 렌더 화면 모양 기본값
 ├─ assets/fonts/                                    폰트와 라이선스
 ├─ templates/{batch.csv, .env.example, 작업화면.bat}
-├─ start.bat                                        저장소에서 바로 화면 실행(작업 폴더 = 저장소의 상위 폴더)
+├─ open-app.bat                                        저장소에서 바로 화면 실행(작업 폴더 = 저장소의 상위 폴더)
 └─ tests/                                           python -m unittest discover -s tests
 ```
 

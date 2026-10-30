@@ -5,7 +5,7 @@ argument-hint: "링크 1줄에 1개 + 제품명: ... (제품이 여러 개면 �
 
 # /misskorea:run
 
-영상 링크와 제품명을 받아, **Chrome으로 영상 내용을 읽고** `misskorea-script` 스킬로 대본 패키지를 만들어 `output/YYYYMMDD/<id>/`에 저장한다. 만든 뒤의 검수·음성·캡컷은 작업 화면(`start.bat`)에서 한다.
+영상 링크와 제품명을 받아, **Chrome으로 영상 내용을 읽고** `misskorea-script` 스킬로 대본 패키지를 만들어 `output/YYYYMMDD/<id>/`에 저장한다. 만든 뒤의 검수·음성·캡컷은 작업 화면(`open-app.bat`)에서 한다.
 
 사용자 입력: `$ARGUMENTS`
 
@@ -88,7 +88,7 @@ TikTok이 아닌 링크(Instagram, YouTube, X)는 같은 방식으로 페이지�
 
 - 영상을 읽지 못했거나 제품 일치가 불확실한 링크와 사유
 - 공식몰을 찾지 못해 해외 판매처로 대신한 경우
-- 다음 단계: "`start.bat`을 더블클릭해 작업 화면에서 검수 → 영상 파일 넣기 → 음성 → 캡컷"
+- 다음 단계: "`open-app.bat`을 더블클릭해 작업 화면에서 검수 → 영상 파일 넣기 → 음성 → 캡컷"
 
 ## 하지 않을 것
 
