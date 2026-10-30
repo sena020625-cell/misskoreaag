@@ -109,15 +109,69 @@ function showRequest() {
     <div class="row"><button class="btn primary" id="reqgo">생성 요청</button><span class="meta" id="reqmsg"></span></div>
   </section>
   <section class="step"><h2><span class="num">≡</span> 요청 현황</h2>
-    <div class="meta" style="margin-bottom:6px">요청은 Claude 앱이 가져가 처리합니다(예약 작업 또는 <code>/misskorea:queue</code>). 앱과 Chrome이 켜져 있어야 하고, 한 번에 한 건씩 처리합니다.</div>
-    <div id="queue">불러오는 중…</div></section>`;
-  loadQueue(); loadList();
+    <div class="meta" style="margin-bottom:6px">요청은 Claude 앱이 가져가 처리합니다. 예약 작업을 설정했다면 자동으로, 아니면 아래 <b>처리 문구 복사</b>를 눌러 Claude 앱에 붙여넣으세요. 앱과 Chrome이 켜져 있어야 하고, 한 번에 한 건씩 처리합니다.</div>
+    <div class="row" style="margin:0 0 8px"><button class="btn small" id="copyproc">처리 문구 복사</button></div>
+    <div id="stale"></div>
+    <div id="queue">불러오는 중…</div></section>
+  <section class="step"><h2><span class="num">✓</span> 설치 상태</h2><div id="health" class="meta">확인 중…</div></section>`;
+  loadQueue(); loadList(); loadHealth();
   clearInterval(qTimer); qTimer = setInterval(() => { if (view === "request") loadQueue(); else clearInterval(qTimer); }, 8000);
+}
+
+async function showRecs() {
+  if (dirty && !confirm("저장하지 않은 수정이 있습니다. 버리고 이동할까요?")) return;
+  dirty = false; view = "recs"; cur = null; clearInterval(qTimer);
+  $("#main").oninput = null;
+  $("#main").onclick = async (e) => {
+    const t = e.target.closest("button"); if (!t) return;
+    if (t.dataset.req) busy(t, "요청 중…", async () => { await post("/api/recs/request", { rid: t.dataset.req }); toast("작업 요청으로 넘겼습니다. 요청 현황에서 확인하세요"); await drawRecs(); loadList(); });
+    else if (t.dataset.pass) { await post("/api/recs/pass", { rid: t.dataset.pass }); await drawRecs(); loadList(); }
+    else if (t.id === "goreq") showRequest();
+  };
+  $("#main").innerHTML = `<h2 style="margin:0 0 4px">오늘의 추천</h2>
+    <div class="meta" style="margin-bottom:12px">매일 아침 Claude가 TikTok K-뷰티 트렌드에서 고른 제품과 영상 링크입니다. <b>요청</b>을 누르면 작업 요청으로 넘어가 대본이 만들어집니다. 제품과 영상이 맞는지는 "확인 필요"를 먼저 보세요.</div>
+    <div id="recbox">불러오는 중…</div>`;
+  drawRecs();
+}
+
+async function drawRecs() {
+  let d; try { d = await api("/api/recs"); } catch (e) { return; }
+  const box = $("#recbox"); if (!box) return;
+  const live = d.items.filter(r => r.status === "추천"), rest = d.items.filter(r => r.status !== "추천");
+  const card = r => `<section class="step" style="margin-bottom:10px"><h2 style="margin-bottom:4px">${esc(r.product)}
+      <span class="chip ${r.status === "요청됨" ? "on" : ""}">${esc(r.status)}</span></h2>
+    <div class="meta">${esc(r.brand)}${r.brand && r.creators ? " · " : ""}${esc(r.creators)} · ${esc(r.date.slice(0, 4))}-${esc(r.date.slice(4, 6))}-${esc(r.date.slice(6))}</div>
+    ${r.reason ? `<div style="margin-top:6px">${esc(r.reason)}</div>` : ""}
+    ${r.check ? `<div class="note warn"><b>확인 필요</b> ${esc(r.check)}</div>` : ""}
+    <div style="margin-top:6px">${r.links.map((l, i) => `<div><a href="${esc(l)}" target="_blank" rel="noopener">영상 ${i + 1}</a> <span class="meta">${esc(l.replace(/^https?:\/\//, "").slice(0, 60))}</span></div>`).join("")}</div>
+    ${r.status === "추천" ? `<div class="row"><button class="btn primary" data-req="${esc(r.rid)}">요청</button><button class="btn small" data-pass="${esc(r.rid)}">패스</button></div>` : ""}
+    ${r.status === "요청됨" ? `<div class="row"><button class="btn small" id="goreq">요청 현황 보기</button></div>` : ""}</section>`;
+  box.innerHTML = (live.length ? live.map(card).join("") : '<div class="meta">새 추천이 없습니다. 예약 작업이 아직 돌지 않았거나, 모두 처리했습니다.</div>') +
+    (rest.length ? `<h3 style="margin:16px 0 6px;color:var(--muted);font-size:13px">지난 추천</h3>` + rest.slice(0, 20).map(card).join("") : "");
+}
+
+let repoName = "misskorea";
+
+async function loadHealth() {
+  let h; try { h = await api("/api/health"); } catch (e) { return; }
+  const el = $("#health"); if (!el) return;
+  const row = (ok, text, fix) => `<div style="color:${ok ? "var(--brand)" : "var(--bad)"}">${ok ? "✓" : "✗"} ${esc(text)}${ok ? "" : ` <span class="meta">${esc(fix)}</span>`}</div>`;
+  el.innerHTML = row(h.ffmpeg, "ffmpeg", "설치 후 앱을 다시 여세요(winget install Gyan.FFmpeg)") +
+    row(h.tts_ok, `음성(TTS): ${h.tts_provider}`, "작업 폴더의 .env 에 키와 보이스 ID를 채우세요") +
+    row(h.capcut, "캡컷 프로젝트 폴더", "캡컷을 설치하고 한 번 실행하세요") +
+    row(h.templates > 0, `서식 견본으로 쓸 캡컷 프로젝트 ${h.templates}개`, "영상 위에 글자 3줄(타이틀 2줄, 자막)과 음성이 있는 완성 프로젝트를 1개 만들어 두세요");
+}
+
+function procPrompt() {
+  return `${repoName}\\commands\\queue.md 와 ${repoName}\\commands\\run.md 를 읽고 그 절차대로, 대기 중인 작업 요청을 처리해줘. (스크립트는 ${repoName}\\scripts, 스킬은 ${repoName}\\skills\\misskorea-script\\SKILL.md 를 쓴다)`;
 }
 
 async function loadQueue() {
   let d; try { d = await api("/api/queue"); } catch (e) { return; }
   const box = $("#queue"); if (!box) return;
+  const old = d.items.filter(q => q.status === "대기" && Date.now() - new Date(q.created_at).getTime() > 15 * 60 * 1000).length;
+  const st = $("#stale");
+  if (st) st.innerHTML = old ? `<div class="note warn">대기 중인 요청 ${old}건이 15분 넘게 처리되지 않았습니다. 예약 작업이 켜져 있는지 확인하거나, <b>처리 문구 복사</b>로 Claude 앱에 붙여넣어 주세요.</div>` : "";
   const col = { "대기": "", "진행중": "on", "완료": "on", "실패": "", "취소": "" };
   box.innerHTML = d.items.length ? d.items.map(q => `<div class="vid" style="align-items:flex-start"><div>
       <b>${esc(q.product)}</b> <span class="chip ${col[q.status]}" ${q.status === "실패" ? 'style="color:var(--bad)"' : ""}>${esc(q.status)}</span>
@@ -143,17 +197,21 @@ async function reqClick(e) {
       if (r.added.length && !r.errors.length) $("#reqtext").value = "";
       loadQueue();
     });
-  } else if (t.dataset.open) { const [d, i] = t.dataset.open.split("/"); view = "job"; openJob(d, i); }
+  } else if (t.id === "copyproc") { await navigator.clipboard.writeText(procPrompt()); toast("복사했습니다. Claude 앱에 붙여넣으세요"); }
+  else if (t.dataset.open) { const [d, i] = t.dataset.open.split("/"); view = "job"; openJob(d, i); }
   else if (t.dataset.cancel) { await post("/api/queue/cancel", { qid: t.dataset.cancel }); loadQueue(); }
   else if (t.dataset.retry) { await post("/api/queue/retry", { qid: t.dataset.retry }); loadQueue(); }
 }
 
 async function loadList() {
   const d = await api("/api/jobs");
-  $("#wd").textContent = "작업 폴더: " + d.workdir;
+  $("#wd").textContent = "작업 폴더: " + d.workdir; repoName = d.repo || repoName;
   const el = $("#list");
-  el.innerHTML = '<button class="item" id="newreq" style="border:1px dashed var(--line);font-weight:600">＋ 새 작업 요청</button>';
+  let nrec = 0; try { nrec = (await api("/api/recs")).items.filter(r => r.status === "추천").length; } catch (e) { /* 추천이 없어도 화면은 열린다 */ }
+  el.innerHTML = '<button class="item" id="newreq" style="border:1px dashed var(--line);font-weight:600">＋ 새 작업 요청</button>' +
+    `<button class="item" id="recs" style="border:1px dashed var(--line);font-weight:600;margin-top:6px">★ 오늘의 추천${nrec ? ` <span class="chip on">${nrec}</span>` : ""}</button>`;
   el.querySelector("#newreq").onclick = showRequest;
+  el.querySelector("#recs").onclick = showRecs;
   if (!d.days.length) el.insertAdjacentHTML("beforeend", '<div class="empty">아직 대본이 없습니다.</div>');
   for (const day of d.days) {
     const h = document.createElement("h3");
@@ -166,7 +224,8 @@ async function loadList() {
         <div class="chips"><span class="chip ${it.approved ? "on" : ""}">검수${it.approved ? " 완료" : ""}</span>
         <span class="chip ${it.videos ? "on" : ""}">영상 ${it.videos}</span>
         <span class="chip ${it.voice ? "on" : ""}">음성</span>
-        <span class="chip ${it.capcut ? "on" : ""}">캡컷</span></div>`;
+        <span class="chip ${it.capcut ? "on" : ""}">캡컷</span>
+        <span class="chip ${it.uploaded ? "on" : ""}">업로드${it.uploaded ? " 완료" : ""}</span></div>`;
       b.onclick = () => openJob(day.date, it.id);
       el.append(b);
     }
@@ -221,6 +280,10 @@ function render() {
 
   <section class="step ${job.videos.length ? "done" : ""}"><h2><span class="num">2</span> 영상 넣기</h2>
     <div class="meta" style="margin-bottom:6px">제품 하나에 영상 2~3개를 넣으면 컷마다 돌아가며 섞입니다. 사용 허락을 받은 영상만 넣어 주세요.</div>
+    ${job.links.length ? `<div class="note" style="background:var(--bg)"><b>원본 링크</b> <span class="meta">(영상 파일을 받을 때 쓰세요)</span>
+      ${job.links.map((l, i) => `<div class="vid"><span><a href="${esc(l)}" target="_blank" rel="noopener">영상 ${i + 1}</a> <span class="meta">${esc(l.replace(/^https?:\/\//, "").slice(0, 56))}</span></span>
+        <button class="btn small" data-copy="${esc(l)}">링크 복사</button></div>`).join("")}
+      <div class="row"><button class="btn small" data-copy="${esc(job.links.join("\n"))}">전체 복사</button></div></div>` : ""}
     <div class="drop" id="drop">여기에 영상을 끌어다 놓거나 <button class="btn small" id="pick">파일 고르기</button><input type="file" id="file" accept="video/*" multiple hidden></div>
     <div id="vids">${job.videos.map(v => `<div class="vid"><span>${esc(v)}</span><button class="btn small" data-del="${esc(v)}">삭제</button></div>`).join("")}</div>
   </section>
@@ -239,6 +302,12 @@ function render() {
     ${!job.voice || !job.videos.length ? '<div class="meta">음성과 영상이 모두 있어야 합니다.</div>' : ""}
     ${s.capcut_draft ? `<div class="note ok">만들어진 프로젝트: <b>${esc(s.capcut_draft)}</b> — 캡컷을 열어 확인하세요.</div>` : ""}
     <div class="row"><button class="btn small" id="openf">결과 폴더 열기</button></div>
+  </section>
+
+  <section class="step ${s.uploaded ? "done" : ""}"><h2><span class="num">5</span> 업로드 완료 표시</h2>
+    <div class="meta">캡컷 편집과 유튜브 업로드를 마쳤으면 체크하세요. 쓴 원본 영상은 이후 추천에서 빠집니다.</div>
+    <label class="pick" style="margin-top:8px"><input type="checkbox" id="upchk" ${s.uploaded ? "checked" : ""}> <b>업로드 완료</b>${s.uploaded_at ? `<span class="meta"> (${esc(s.uploaded_at.replace("T", " ").slice(0, 16))})</span>` : ""}</label>
+    <div class="row"><input type="text" id="yturl" placeholder="업로드한 유튜브 영상 주소(선택)" value="${esc(s.youtube_url || "")}" style="max-width:480px"></div>
   </section>`;
   drawVersions();
   bind();
@@ -339,6 +408,16 @@ function bind() {
     else if (ta.id === "t1" || ta.id === "t2" || ta.id === "desc") { titleCount(); markDirty(); }
   };
   titleCount();
+  main.onchange = async (e) => {
+    const t = e.target;
+    if (t.id === "upchk" || (t.id === "yturl" && $("#upchk").checked)) {
+      try {
+        const r = await post(`/api/job/${cur.date}/${cur.id}/uploaded`, { uploaded: $("#upchk").checked, youtube_url: $("#yturl").value });
+        job.script = r.script; toast($("#upchk").checked ? "업로드 완료로 표시했습니다" : "업로드 완료 표시를 해제했습니다");
+        render(); loadList();
+      } catch (err) { toast(err.message, 6000); $("#upchk").checked = job.script.uploaded === true; }
+    }
+  };
   const file = $("#file"); if (file) file.onchange = () => { uploadFiles([...file.files]); file.value = ""; };
   const drop = $("#drop");
   if (drop) {

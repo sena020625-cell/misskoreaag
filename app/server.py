@@ -110,11 +110,24 @@ def api_jobs() -> dict:
                     continue
                 items.append({"id": ip.name, "product": s.get("product", ""), "brand": s.get("brand", ""),
                               "approved": s.get("approved") is True,
+                              "uploaded": s.get("uploaded") is True,
                               "voice": (ip / "voice.mp3").exists(),
                               "videos": len(list_videos(ip.name)),
                               "capcut": bool(s.get("capcut_draft"))})
             days.append({"date": dd.name, "items": items})
-    return {"days": days, "workdir": str(WORK)}
+    return {"days": days, "workdir": str(WORK), "repo": REPO.name}
+
+
+def api_health() -> dict:
+    """설치 상태 점검(값은 보여주지 않고 있는지만 알려준다)."""
+    sys.path.insert(0, str(SCRIPTS))
+    from common import load_env
+    env = load_env(WORK)
+    prov = (env.get("TTS_PROVIDER") or "").lower()
+    keys = {"typecast": ("TYPECAST_API_KEY", "TYPECAST_VOICE_ID"), "elevenlabs": ("ELEVENLABS_API_KEY", "ELEVENLABS_VOICE_ID")}.get(prov)
+    tts_ok = bool(keys and env.get(keys[0]) and env.get(keys[1])) or prov in ("mock",)
+    return {"ffmpeg": shutil.which("ffmpeg") is not None, "tts_provider": prov or "(없음)", "tts_ok": tts_ok,
+            "capcut": DRAFTS.is_dir(), "templates": len(api_templates()["templates"])}
 
 
 def api_job(date: str, item_id: str) -> dict:
@@ -125,7 +138,8 @@ def api_job(date: str, item_id: str) -> dict:
     s = load_json(sp)
     for v in s.get("versions", []):
         v["est_seconds"] = est_seconds(v.get("lines", []))
-    return {"script": s, "voice": (d / "voice.mp3").exists(),
+    links = s.get("video_links") or ([s["video_link"]] if s.get("video_link") else [])
+    return {"script": s, "links": links, "voice": (d / "voice.mp3").exists(),
             "videos": [p.name for p in list_videos(item_id)],
             "capcut_running": capcut_running(),
             "templates": api_templates()["templates"]}
@@ -167,6 +181,20 @@ def api_save(date: str, item_id: str, body: dict) -> dict:
     # 문구가 바뀌면 이전 음성은 쓸 수 없다 (tts.py 가 해시로 다시 만들지만 표시를 위해)
     if [v.get("lines") for v in s.get("versions", [])] != old_lines:
         s.pop("capcut_draft", None)
+    save_json(sp, s)
+    return {"ok": True, "script": s}
+
+
+def api_uploaded(date: str, item_id: str, uploaded: bool, youtube_url: str) -> dict:
+    """유튜브 업로드를 마쳤다고 표시한다. 쓴 소스 링크는 이후 추천에서 제외된다."""
+    sp = item_dir(date, item_id) / "script.json"
+    s = load_json(sp)
+    youtube_url = (youtube_url or "").strip()
+    if youtube_url and not re.match(r"^https?://\S+$", youtube_url):
+        raise ApiError("업로드한 영상 주소는 http로 시작해야 합니다")
+    s["uploaded"] = bool(uploaded)
+    s["uploaded_at"] = time.strftime("%Y-%m-%dT%H:%M:%S") if uploaded else ""
+    s["youtube_url"] = youtube_url if uploaded else ""
     save_json(sp, s)
     return {"ok": True, "script": s}
 
@@ -280,6 +308,48 @@ def api_queue_add(text: str) -> dict:
             "errors": errors}
 
 
+def _recs():
+    sys.path.insert(0, str(SCRIPTS))
+    import recs
+    return recs
+
+
+def api_recs() -> dict:
+    rows = sorted(_recs().load(WORK), key=lambda r: r.get("created_at", ""), reverse=True)[:80]
+    return {"items": rows}
+
+
+def _find_rec(rid: str) -> tuple[list[dict], dict]:
+    items = _recs().load(WORK)
+    for it in items:
+        if it.get("rid") == rid:
+            return items, it
+    raise ApiError("추천을 찾을 수 없습니다", 404)
+
+
+def api_recs_request(rid: str) -> dict:
+    """추천 한 건을 작업 요청(대기열)으로 넘긴다."""
+    r = _recs()
+    items, it = _find_rec(rid)
+    if it.get("status") == "요청됨":
+        raise ApiError("이미 요청한 추천입니다")
+    text = "\n".join(it["links"]) + f"\n제품명: {it['product']}"
+    added, errors = _jq().add(WORK, text)
+    if errors or not added:
+        raise ApiError("요청하지 못했습니다: " + " / ".join(errors))
+    it["status"], it["qid"] = "요청됨", added[0]["qid"]
+    r.save(WORK, items)
+    return {"ok": True, "qid": it["qid"]}
+
+
+def api_recs_pass(rid: str) -> dict:
+    r = _recs()
+    items, it = _find_rec(rid)
+    it["status"] = "패스"
+    r.save(WORK, items)
+    return {"ok": True}
+
+
 def _queue_item(qid: str) -> Path:
     if not re.fullmatch(r"q[0-9]{8}-[0-9]{6}-[0-9a-f]{4}", qid):
         raise ApiError("잘못된 요청 번호입니다")
@@ -357,6 +427,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, api_jobs())
             if parts == ["api", "queue"]:
                 return self._json(200, api_queue())
+            if parts == ["api", "recs"]:
+                return self._json(200, api_recs())
+            if parts == ["api", "health"]:
+                return self._json(200, api_health())
             if len(parts) == 4 and parts[:2] == ["api", "job"]:
                 return self._json(200, api_job(parts[2], parts[3]))
             if len(parts) == 5 and parts[:2] == ["api", "job"] and parts[4] == "voice.mp3":
@@ -379,6 +453,12 @@ class Handler(BaseHTTPRequestHandler):
         try:
             n = int(self.headers.get("Content-Length") or 0)
             raw = self.rfile.read(n) if n else b""
+            if len(parts) == 3 and parts[:2] == ["api", "recs"]:
+                body = json.loads(raw or b"{}")
+                if parts[2] == "request":
+                    return self._json(200, api_recs_request(str(body["rid"])))
+                if parts[2] == "pass":
+                    return self._json(200, api_recs_pass(str(body["rid"])))
             if len(parts) == 3 and parts[:2] == ["api", "queue"]:
                 body = json.loads(raw or b"{}")
                 if parts[2] == "add":
@@ -393,6 +473,9 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json(200, api_save(date, item_id, json.loads(raw or b"{}")))
                 if action == "upload":
                     return self._json(200, api_upload(date, item_id, q.get("name", [""])[0], raw))
+                if action == "uploaded":
+                    b = json.loads(raw or b"{}")
+                    return self._json(200, api_uploaded(date, item_id, b.get("uploaded") is True, str(b.get("youtube_url", ""))))
                 if action == "delete-video":
                     return self._json(200, api_delete_video(date, item_id, json.loads(raw)["name"]))
                 if action == "voice":
