@@ -260,6 +260,55 @@ def api_capcut(date: str, item_id: str, template: str) -> dict:
     return {"ok": True, "name": name, "log": out[-400:]}
 
 
+def _jq():
+    sys.path.insert(0, str(SCRIPTS))
+    import jobqueue
+    return jobqueue
+
+
+def api_queue() -> dict:
+    jq = _jq()
+    jq.reap_stale(WORK)
+    rows = sorted(jq.items(WORK), key=lambda r: r.get("created_at", ""), reverse=True)[:60]
+    return {"items": rows}
+
+
+def api_queue_add(text: str) -> dict:
+    jq = _jq()
+    added, errors = jq.add(WORK, text)
+    return {"added": [{"qid": a["qid"], "product": a["product"], "links": len(a["links"])} for a in added],
+            "errors": errors}
+
+
+def _queue_item(qid: str) -> Path:
+    if not re.fullmatch(r"q[0-9]{8}-[0-9]{6}-[0-9a-f]{4}", qid):
+        raise ApiError("잘못된 요청 번호입니다")
+    p = WORK / "input" / "queue" / f"{qid}.json"
+    if not p.exists():
+        raise ApiError("요청을 찾을 수 없습니다", 404)
+    return p
+
+
+def api_queue_cancel(qid: str) -> dict:
+    jq = _jq()
+    p = _queue_item(qid)
+    d = load_json(p)
+    if d.get("status") != "대기":
+        raise ApiError("대기 중인 요청만 취소할 수 있습니다")
+    jq.finish(WORK, qid, "취소", "사용자가 취소했습니다")
+    return {"ok": True}
+
+
+def api_queue_retry(qid: str) -> dict:
+    p = _queue_item(qid)
+    d = load_json(p)
+    if d.get("status") not in ("실패", "취소"):
+        raise ApiError("실패하거나 취소된 요청만 다시 접수할 수 있습니다")
+    d["status"], d["message"], d["id"] = "대기", "", ""
+    save_json(p, d)
+    return {"ok": True}
+
+
 def api_open(date: str, item_id: str) -> dict:
     d = item_dir(date, item_id)
     if hasattr(os, "startfile"):
@@ -306,6 +355,8 @@ class Handler(BaseHTTPRequestHandler):
             parts = [unquote(x) for x in u.path.strip("/").split("/")]
             if parts == ["api", "jobs"]:
                 return self._json(200, api_jobs())
+            if parts == ["api", "queue"]:
+                return self._json(200, api_queue())
             if len(parts) == 4 and parts[:2] == ["api", "job"]:
                 return self._json(200, api_job(parts[2], parts[3]))
             if len(parts) == 5 and parts[:2] == ["api", "job"] and parts[4] == "voice.mp3":
@@ -328,6 +379,14 @@ class Handler(BaseHTTPRequestHandler):
         try:
             n = int(self.headers.get("Content-Length") or 0)
             raw = self.rfile.read(n) if n else b""
+            if len(parts) == 3 and parts[:2] == ["api", "queue"]:
+                body = json.loads(raw or b"{}")
+                if parts[2] == "add":
+                    return self._json(200, api_queue_add(str(body.get("text", ""))))
+                if parts[2] == "cancel":
+                    return self._json(200, api_queue_cancel(str(body["qid"])))
+                if parts[2] == "retry":
+                    return self._json(200, api_queue_retry(str(body["qid"])))
             if len(parts) == 5 and parts[:2] == ["api", "job"]:
                 date, item_id, action = parts[2], parts[3], parts[4]
                 if action == "save":

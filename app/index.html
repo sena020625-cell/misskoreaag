@@ -94,11 +94,67 @@ async function api(path, opts = {}) {
 }
 const post = (p, body) => api(p, { method: "POST", body: JSON.stringify(body || {}) });
 
+let view = "job", qTimer = null, lastDone = -1;
+
+function showRequest() {
+  if (dirty && !confirm("저장하지 않은 수정이 있습니다. 버리고 이동할까요?")) return;
+  dirty = false; view = "request"; cur = null;
+  $("#main").onclick = reqClick; $("#main").oninput = null;
+  $("#main").innerHTML = `
+  <h2 style="margin:0 0 4px">새 작업 요청</h2>
+  <div class="meta" style="margin-bottom:12px">영상 링크(한 줄에 하나)와 <b>제품명</b>을 적고 요청하면, Claude가 영상을 읽고 대본을 만들어 목록에 올립니다. 제품이 여러 개면 빈 줄로 나누세요.</div>
+  <section class="step"><h2><span class="num">＋</span> 링크와 제품명</h2>
+    <textarea id="reqtext" rows="8" placeholder="https://www.tiktok.com/@계정/video/숫자&#10;https://www.tiktok.com/@계정/video/숫자&#10;제품명: 스킨1004 마다가스카르 센텔라 라이트 클렌징오일"></textarea>
+    <div class="meta" style="margin-top:6px">선택 줄: <code>공식몰: 주소</code>, <code>훅: 첫 줄 문구</code>, <code>강조: 꼭 넣을 특징</code>, <code>메모: 영상에서 일어나는 일</code></div>
+    <div class="row"><button class="btn primary" id="reqgo">생성 요청</button><span class="meta" id="reqmsg"></span></div>
+  </section>
+  <section class="step"><h2><span class="num">≡</span> 요청 현황</h2>
+    <div class="meta" style="margin-bottom:6px">요청은 Claude 앱이 가져가 처리합니다(예약 작업 또는 <code>/misskorea:queue</code>). 앱과 Chrome이 켜져 있어야 하고, 한 번에 한 건씩 처리합니다.</div>
+    <div id="queue">불러오는 중…</div></section>`;
+  loadQueue(); loadList();
+  clearInterval(qTimer); qTimer = setInterval(() => { if (view === "request") loadQueue(); else clearInterval(qTimer); }, 8000);
+}
+
+async function loadQueue() {
+  let d; try { d = await api("/api/queue"); } catch (e) { return; }
+  const box = $("#queue"); if (!box) return;
+  const col = { "대기": "", "진행중": "on", "완료": "on", "실패": "", "취소": "" };
+  box.innerHTML = d.items.length ? d.items.map(q => `<div class="vid" style="align-items:flex-start"><div>
+      <b>${esc(q.product)}</b> <span class="chip ${col[q.status]}" ${q.status === "실패" ? 'style="color:var(--bad)"' : ""}>${esc(q.status)}</span>
+      <div class="meta">링크 ${q.links.length}개 · ${esc((q.created_at || "").replace("T", " ").slice(5, 16))}${q.message ? " · " + esc(q.message) : ""}</div></div>
+      <div class="row" style="margin:0">
+        ${q.status === "완료" ? `<button class="btn small primary" data-open="${esc(q.date)}/${esc(q.id)}">열기</button>` : ""}
+        ${q.status === "대기" ? `<button class="btn small" data-cancel="${esc(q.qid)}">취소</button>` : ""}
+        ${q.status === "실패" || q.status === "취소" ? `<button class="btn small" data-retry="${esc(q.qid)}">다시 요청</button>` : ""}
+      </div></div>`).join("") : '<div class="meta">아직 요청이 없습니다.</div>';
+  const done = d.items.filter(q => q.status === "완료").length;
+  if (lastDone !== -1 && done !== lastDone) loadList();
+  lastDone = done;
+}
+
+async function reqClick(e) {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.id === "reqgo") {
+    const text = $("#reqtext").value;
+    busy(t, "접수 중…", async () => {
+      const r = await post("/api/queue/add", { text });
+      $("#reqmsg").style.color = r.errors.length ? "var(--bad)" : "var(--brand)";
+      $("#reqmsg").textContent = [r.added.length ? `${r.added.length}건 접수했습니다` : "", ...r.errors].filter(Boolean).join(" / ");
+      if (r.added.length && !r.errors.length) $("#reqtext").value = "";
+      loadQueue();
+    });
+  } else if (t.dataset.open) { const [d, i] = t.dataset.open.split("/"); view = "job"; openJob(d, i); }
+  else if (t.dataset.cancel) { await post("/api/queue/cancel", { qid: t.dataset.cancel }); loadQueue(); }
+  else if (t.dataset.retry) { await post("/api/queue/retry", { qid: t.dataset.retry }); loadQueue(); }
+}
+
 async function loadList() {
   const d = await api("/api/jobs");
   $("#wd").textContent = "작업 폴더: " + d.workdir;
   const el = $("#list");
-  el.innerHTML = d.days.length ? "" : '<div class="empty">아직 대본이 없습니다.</div>';
+  el.innerHTML = '<button class="item" id="newreq" style="border:1px dashed var(--line);font-weight:600">＋ 새 작업 요청</button>';
+  el.querySelector("#newreq").onclick = showRequest;
+  if (!d.days.length) el.insertAdjacentHTML("beforeend", '<div class="empty">아직 대본이 없습니다.</div>');
   for (const day of d.days) {
     const h = document.createElement("h3");
     h.textContent = `${day.date.slice(0,4)}-${day.date.slice(4,6)}-${day.date.slice(6)}`;
@@ -119,7 +175,7 @@ async function loadList() {
 
 async function openJob(date, id) {
   if (dirty && !confirm("저장하지 않은 수정이 있습니다. 버리고 이동할까요?")) return;
-  cur = { date, id };
+  cur = { date, id }; view = "job";
   try { job = await api(`/api/job/${date}/${id}`); } catch (e) { toast(e.message); return; }
   dirty = false;
   render();
@@ -292,7 +348,7 @@ function bind() {
   }
 }
 
-loadList();
+showRequest();
 </script>
 </body>
 </html>
