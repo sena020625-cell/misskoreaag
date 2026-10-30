@@ -47,10 +47,10 @@ TikTok 링크(`tiktok.com/@계정/video/숫자`)는 아래대로 한다.
    const v=document.querySelector('video');
    const d=document.querySelector('[data-e2e="browse-video-desc"]')||document.querySelector('[data-e2e="video-desc"]');
    JSON.stringify({desc:d&&d.innerText.replace(/\n+/g,' '), dur:v&&v.duration,
-     og:(document.querySelector('meta[property="og:description"]')||{}).content,
-     user:(document.querySelector('[data-e2e="browse-username"]')||{}).innerText})
+     og:(document.querySelector('meta[property="og:description"]')||{}).content})
    ```
-3. 장면 확인: `video.pause()` 후 `video.currentTime`을 길이의 0%, 25%, 50%, 75%, 95%로 옮기며 `screenshot`(scale 0.5)을 찍어 화면에서 일어나는 일을 적는다(무엇을 바르는지, 질감, 화면 속 글자, 용기·로고). **소리(대사)는 읽을 수 없다.** 안 들렸다고 지어내지 말고 "음성 미확인"으로 둔다.
+   계정(@핸들)은 **링크 주소에서** 가져온다(`browse-username` 요소는 비어 있는 경우가 있다).
+3. 장면 확인: `javascript_tool`로 `video.pause(); video.currentTime = 길이 × 비율`을 설정하고 0.9초 기다린 뒤, `computer`의 `zoom`으로 영상 영역만(scale 0.4) 찍어 화면에서 일어나는 일을 적는다. 비율은 0%, 30%, 55%, 80%, 95% 정도로 5곳(무엇을 바르는지, 질감, 화면 속 글자, 용기·로고). **소리(대사)는 읽을 수 없다.** 안 들렸다고 지어내지 말고 "음성 미확인"으로 둔다.
 4. 기록할 것: 계정(@핸들), 캡션 전문, 해시태그와 태그된 브랜드, 길이(초), 장면별 설명, 협찬·광고 표시가 영상 쪽에 보이는지(옆 추천 영상 것과 구분이 안 되면 "확인 못 함"), 제품 일치 여부.
 5. **제품 일치 확인**: 제품명과 캡션·태그·화면 속 용기가 맞는지 본다. 맞는지 불확실하면 그 영상 항목에 "제품 일치 확인 필요"를 적는다(예: 캡션에 브랜드 태그만 있고 화면은 다른 질감). 맞지 않는다고 확신하면 그 링크는 대본 근거에서 빼고 보고에 적는다.
 
